@@ -15,7 +15,7 @@ class DAGTask:
         
         self._V = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11]
         self._C = [1, 5, 6, 7, 3, 6, 4, 2, 9, 8, 1]
-        self._E = {1:[2,3,4], 2:[5,6], 3:[7,8], 4:[11], 5:[9], 6:[9], 7:[10], 8:[10], 9:[11], 10:[11]}
+        self._E = {1:[2,3,4], 2:[5,6], 3:[7,8], 4:[11], 5:[9], 6:[9], 7:[10], 8:[10], 9:[11], 10:[11], 11:[]}
 
         # pre- constraint list (reverse E and accumulate)
         self._pre = {}
@@ -26,14 +26,8 @@ class DAGTask:
                 else:
                     self._pre[i] = [_key]
 
-        # search for the critical path
-        
 
-        # find the critical nodes
-
-
-        # find the associative nodes
-
-
-        # find the non-critical nodes
-
+class Task:
+    def __init__(self, idx, c):
+        self.idx = idx
+        self.c = c

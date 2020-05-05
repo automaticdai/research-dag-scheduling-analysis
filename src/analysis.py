@@ -2,7 +2,9 @@
 # -*- coding: utf-8 -*-
 
 # DAG Scheduling Simulator
-# Shuai Zhao
+# Xiaotian Dai
 # Real-Time Systems Group
 # University of York, UK
+
+import matplotlib
 

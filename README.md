@@ -4,4 +4,22 @@
 [![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://GitHub.com/Naereen/StrapDown.js/graphs/commit-activity)
 [![License](http://img.shields.io/:license-mit-blue.svg)](http://badges.mit-license.org)
 
-Executing DAG tasksets with plug-in schedulers.
+Simulate DAG tasksets execution on multi-cores. This package supports:
+
+- plug-in schedulers
+- analysis
+- trace execution logs
+- use with rnd-dag-gen task generator
+- configurable scheduling and task parameters
+
+
+Supported scheduling alogrithm:
+
+- Non-preemptive random
+- Non-preemptive with eligibility ordering
+- Preemptive workload distribution model
+
+
+## License
+
+MIT License
