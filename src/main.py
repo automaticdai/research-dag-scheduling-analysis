@@ -15,11 +15,11 @@ from sched import *
 
 
 def run_eligibility():
-    eligibility_np(task)
+    eligibility_np()
 
 
 def run_random():
-    random_np(task)
+    random_np()
 
 
 def run_rta():

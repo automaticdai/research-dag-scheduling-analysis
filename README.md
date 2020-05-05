@@ -19,6 +19,15 @@ Supported scheduling alogrithm:
 - Non-preemptive with eligibility ordering
 - Preemptive workload distribution model
 
+Suppored execution models:
+
+- WCET
+- BCET
+- Normal distributed
+- Uniformed distributed
+
+(*) Note the normal distributed model is thresholded by 3 delta.
+
 
 ## License
 
