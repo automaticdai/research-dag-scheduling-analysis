@@ -23,6 +23,10 @@ Suppored execution models:
 
 - WCET
 - BCET
+- Random and half-random
+
+For random, two random algorithms can be selected:
+
 - Normal distributed
 - Uniformed distributed
 

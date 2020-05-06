@@ -7,8 +7,7 @@
 # University of York, UK
 
 def find_all_paths(G_, start_vertex, end_vertex, path=[]):
-    """ find all paths from start_vertex to 
-        end_vertex in graph """
+    """ find all paths from start_vertex to end_vertex in graph """
     graph = G_
     path = path + [start_vertex]
     
@@ -32,10 +31,11 @@ def find_all_paths(G_, start_vertex, end_vertex, path=[]):
     return paths
 
 
-# find the longest path with depth first search
 def find_longest_path_dfs(G_, start_vertex, end_vertex, weights):
+    """ find the longest path with depth first search """
+
     # find all paths
-    paths = find_all_paths(G_, 1, 11)
+    paths = find_all_paths(G_, start_vertex, end_vertex)
     
     # search for the critical path
     costs = []
@@ -48,6 +48,20 @@ def find_longest_path_dfs(G_, start_vertex, end_vertex, weights):
     (m, i) = max((v,i) for i,v in enumerate(costs))
 
     return (m, paths[i])
+
+
+def find_associative_nodes(G_, candidate_nodes, critical_path):
+    # find associative nodes that could block the critical path
+
+    associated_nodes = []
+
+    # if there is any route from A -> B, then B is associated with A
+    for S in candidate_nodes:
+        for E in critical_path:
+            if find_all_paths(G_, S, E):
+                if S not in associated_nodes:  associated_nodes.append(S)
+
+    return associated_nodes
 
 
 if __name__ == "__main__":
