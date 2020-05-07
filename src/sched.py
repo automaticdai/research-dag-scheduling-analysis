@@ -14,7 +14,7 @@ import random
 import operator
 from pprint import pprint
 
-from task import DAGTask, Task
+from task import DAGTask, Job
 from processor import Processor
 from graph import find_longest_path_dfs, find_associative_nodes
 
@@ -72,21 +72,21 @@ def sched(algorithm = "random", execution_model = "WCET"):
     # load taskset
     dag = DAGTask()
 
-    #pprint(("V:", dag._V))
-    #pprint(("E:", dag._E))
-    #pprint(("Pre:", dag._pre))
+    #pprint(("V:", dag.V))
+    #pprint(("C:", dag.C))
+    #pprint(("Pre:", dag.pre))
 
     # variables
     finished = False
 
-    w_queue = dag._V.copy() # waitting queue (not released due to constraints)
+    w_queue = dag.V.copy() # waitting queue (not released due to constraints)
     r_queue = []            # ready nodes queue
     f_queue = []            # finished nodes queue
 
     if algorithm == "eligibility":
-        EO_G = dag._G.copy()
-        EO_V = dag._V.copy()
-        wcet = dag._C.copy()
+        EO_G = dag.G.copy()
+        EO_V = dag.V.copy()
+        wcet = dag.C.copy()
 
         EO_WCET = {}
         for i in EO_V:
@@ -156,7 +156,7 @@ def sched(algorithm = "random", execution_model = "WCET"):
 
         # update the ready queue (by iterative all left nodes)
         for i in w_queue:
-            if all(elem in f_queue  for elem in dag._pre[i]):
+            if all(elem in f_queue  for elem in dag.pre[i]):
                 r_queue.append(i)
                 w_queue.remove(i)
         
@@ -178,13 +178,13 @@ def sched(algorithm = "random", execution_model = "WCET"):
                                 E_MAX = EO_eligibility[i]
                     else:
                         task_idx = r_queue[0]
-                    tau = Task(_idx = task_idx, _c = dag._C[task_idx - 1])
+                    tau = Job(idx_ = task_idx, C_ = dag.C[task_idx - 1])
                     cores[m].assign(tau)
                     r_queue.remove(task_idx)
                     trace(0, t, "Job {:d} assgined to Core {:d}".format(task_idx, m))
 
         # check the next scheduling point (the shortest workload time)
-        A_LARGE_NUMBER = 1000000000
+        A_LARGE_NUMBER = float("inf")
         sp = A_LARGE_NUMBER
         for core in cores:
             if core.workload != 0:
@@ -206,8 +206,8 @@ def sched(algorithm = "random", execution_model = "WCET"):
 
         # exit loop if all nodes are finished
         f_queue.sort()
-        dag._V.sort()
-        if f_queue == dag._V:
+        dag.V.sort()
+        if f_queue == dag.V:
             finished = True
     
     makespan = t
@@ -229,4 +229,6 @@ if __name__ == "__main__":
     
     print(" ")
     sched("eligibility")
+    
+    print(" ")
     

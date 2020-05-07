@@ -6,11 +6,12 @@
 # Real-Time Systems Group
 # University of York, UK
 
-from task import Task
+from task import Job, Task
 
 class Processor:
     def __init__(self):
         self.idle = True
+        self.idle_cnt = 0
         self.workload = 0
         self.task = -1
 
@@ -26,9 +27,9 @@ class Processor:
 
 
     # assign a task to the processor
-    def assign(self, _task):
-        self.task = _task.idx
-        self.workload = _task.c
+    def assign(self, task_):
+        self.task = task_.idx
+        self.workload = task_.C
         self.idle = False
 
 
@@ -40,6 +41,8 @@ class Processor:
             if self.workload == 0:
                 self.idle = True
                 finish_flag = True
+        else:
+            self.idle_cnt = self.idle_cnt + t
 
         return (self.task, finish_flag)
 
