@@ -8,33 +8,56 @@
 
 from task import Job, Task
 
-class Processor:
+
+class Cache:
+    pass
+
+
+class Core:
+    """ a core is a hardware entity for executing code. Each core:
+    - can execute code
+    - optionally has a level 1 cache (I-Cache and D-Cache)
+    - optionally has a level 2 cache if level 1 cache is enabled
+    """
+
     def __init__(self):
         self.idle = True
         self.idle_cnt = 0
         self.workload = 0
-        self.task = -1
+        self.job_id = -1
 
 
-    # get workload left
     def get_workload(self):
+        """ get the workload left
+        """
         return self.workload
 
 
-    # get the current running task
     def get_running_task(self):
-        return self.task
+        """ get the current running task
+        """
+        return self.job_id
 
 
-    # assign a task to the processor
-    def assign(self, task_):
-        self.task = task_.idx
-        self.workload = task_.C
+    def get_idle_count(self):
+        """ get CPU idle count
+        """
+        return self.idle_cnt
+    
+
+    def assign(self, job_):
+        """ assign a job to the core
+        """
+        self.job_id = job_.idx
+        self.workload = job_.C
         self.idle = False
 
 
     # execute for t time
     def execute(self, t):
+        """ execute the current job for time t
+        """
+
         finish_flag = False
         if not self.idle:
             self.workload = self.workload - t
@@ -44,14 +67,30 @@ class Processor:
         else:
             self.idle_cnt = self.idle_cnt + t
 
-        return (self.task, finish_flag)
+        return (self.job_id, finish_flag)
 
 
-    # migrate a task to another processor
+    def abort(self):
+        """ abort execution
+        """
+        pass
+
+
     def migrate(self, _task):
+        """ migrate a task to another core
+        """
         pass
 
 
-    # perform a context switch
     def context_switch(self, _task, _task_new):
+        """ perform a context switch
+        """
         pass
+
+
+class Processor:
+    """ a processor has:
+    - 1 to n cores
+    - cache
+    """
+    pass

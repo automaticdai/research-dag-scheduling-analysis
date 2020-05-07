@@ -15,7 +15,7 @@ import operator
 from pprint import pprint
 
 from task import DAGTask, Job
-from processor import Processor
+from processor import Core
 from graph import find_longest_path_dfs, find_associative_nodes
 
 
@@ -66,7 +66,7 @@ def sched(algorithm = "random", execution_model = "WCET"):
     number_of_cores = 2
 
     for m in range(number_of_cores):
-        core = Processor()
+        core = Core()
         cores.append(core)
 
     # load taskset
@@ -187,9 +187,9 @@ def sched(algorithm = "random", execution_model = "WCET"):
         A_LARGE_NUMBER = float("inf")
         sp = A_LARGE_NUMBER
         for core in cores:
-            if core.workload != 0:
-                if core.workload < sp:
-                    sp = core.workload
+            if core.get_workload() != 0:
+                if core.get_workload() < sp:
+                    sp = core.get_workload()
         # (the default scheduling point is 1, i.e., check on each tick)
         if sp == A_LARGE_NUMBER:
             sp = 1
@@ -231,4 +231,3 @@ if __name__ == "__main__":
     sched("eligibility")
     
     print(" ")
-    
