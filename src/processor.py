@@ -9,8 +9,37 @@
 from task import Job, Task
 
 
-class Cache:
-    pass
+class Storage:
+    def __init__(self):
+        pass
+
+
+class Memory:
+    def __init__(self):
+        pass
+
+
+class Cache(Storage):
+    def __init__(self, type_ = "L1"):
+        if type_ == "L1":
+            self.type = type_
+            self.size = 1
+            self.miss_penalty = 5
+        elif type_ == "L2":
+            self.type = type_
+            self.size = 10
+            self.miss_penalty = 20
+        elif type_ == "L3":
+            self.type = type_
+            self.size = 100
+            self.miss_penalyu = 200
+        else:
+            # should have an exception
+            raise ValueError("Not supported cache type")
+
+
+    def is_hit(self):
+        pass
 
 
 class Core:
