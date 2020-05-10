@@ -30,8 +30,11 @@ class Simulator:
     def run(self):
         # enable logger
         trace_init(log_to_file = False)
-
+        
+        # # # # # # # # # #
         # start simulation
+        n = 0
+        # iteratives tasksets
         for task_idx in range(20):
             # load the DAG task
             dag_task_file = "./data/Tau_{:d}.gpickle".format(task_idx)
@@ -60,18 +63,23 @@ class Simulator:
             dag = DAGTask(G_dict, C_exp)
             C_exp.append(1)
 
+            # # # # # # # # # #
+            # iteratives algorithms
             for algorithm_name in ("random", "eligibility"):
                 for m in (2, 4):
                     for e_model in ("WCET", "full_random", "half_random"):
-                        if algorithm_name == "random" or e_model == "half_random":
-                            trails = range(100)
+                        makespans = []
+                        if algorithm_name == "random" or e_model is not "WCET":
+                            for _ in range(100):
+                                makespan = sched(dag, number_of_cores = m, algorithm = algorithm_name, execution_model = e_model)
+                                makespans.append(makespan)
+                                n = n + 1
                         else:
-                            trails = [1]
-                        
-                        for trail_n in trails:
                             makespan = sched(dag, number_of_cores = m, algorithm = algorithm_name, execution_model = e_model)
-                            print(task_idx, algorithm_name, m, e_model, trail_n, makespan)
-                            #Path("./results/{:s}/{:d}/m={:d}/{:s}".format(algorithm_name, task_idx, m, e_model)).mkdir(parents=True, exist_ok=True)
+                            makespans.append(makespan)
+                            n = n + 1
+                        
+                        print(task_idx, ";", algorithm_name, ";", m, ";", e_model, ";", makespans)
 
 
 if __name__ == "__main__":
