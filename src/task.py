@@ -30,9 +30,9 @@ class Task(Job):
 
 
 class DAGTask(Task):
-    def __init__(self):
+    def __init__(self, G_, C_):
         """ a DAG task is a task with directed graph dependencies
-        - G is the graph
+        - G is the graph {node: [connected_nodes], ... }
         - pre is the precondition that describes the dependability
         - the computational time of a DAG is an array contains all C of its nodes
         
@@ -43,8 +43,10 @@ class DAGTask(Task):
         
         super().__init__(self)
 
-        self.G = {1:[2,3,4], 2:[5,6], 3:[7,8], 4:[11], 5:[9], 6:[9], 7:[10], 8:[10], 9:[11], 10:[11], 11:[]}
-        self.C = [1, 5, 6, 7, 3, 6, 4, 2, 9, 8, 1]
+        self.G = G_
+        self.C = C_
+
+        # get all vertices
         self.V = sorted(self.G.keys())
 
         # pre- constraint list (reverse E and accumulate)

@@ -11,6 +11,7 @@ import logging
 import pickle
 import json
 import random
+import math
 import operator
 from pprint import pprint
 
@@ -31,10 +32,10 @@ def trace_init(log_to_file):
     LOG_FORMAT = '[%(asctime)s-%(levelname)s: %(message)s]'
     LOG_DATEFMT = '%Y-%m-%d %H:%M:%S'
     if log_to_file == True:
-        logging.basicConfig(filename='log.txt', filemode='a', level=logging.DEBUG,
+        logging.basicConfig(filename='log.txt', filemode='a', level=logging.INFO,
                             format=LOG_FORMAT, datefmt=LOG_DATEFMT)
     else:
-        logging.basicConfig(level=logging.DEBUG, format=LOG_FORMAT, datefmt=LOG_DATEFMT)
+        logging.basicConfig(level=logging.INFO, format=LOG_FORMAT, datefmt=LOG_DATEFMT)
 
 
 def trace(msglevel, timestamp, message):
@@ -45,7 +46,7 @@ def trace(msglevel, timestamp, message):
     else: pass
 
 
-def sched(algorithm = "random", execution_model = "WCET"):
+def sched(dag, number_of_cores, algorithm = "random", execution_model = "WCET"):
     """
     Policies:
     - random
@@ -53,28 +54,18 @@ def sched(algorithm = "random", execution_model = "WCET"):
     
     Execution models:
     - WCET
-    - BCET
-    - random
-    - normal
+    - half_random
+    - full_random
     """
 
     t = 0
-    T_MAX = 1000
+    T_MAX = 100000
 
     # initialize cores
     cores = []
-    number_of_cores = 2
-
     for m in range(number_of_cores):
         core = Core()
         cores.append(core)
-
-    # load taskset
-    dag = DAGTask()
-
-    #pprint(("V:", dag.V))
-    #pprint(("C:", dag.C))
-    #pprint(("Pre:", dag.pre))
 
     # variables
     finished = False
@@ -178,7 +169,18 @@ def sched(algorithm = "random", execution_model = "WCET"):
                                 E_MAX = EO_eligibility[i]
                     else:
                         task_idx = r_queue[0]
-                    tau = Job(idx_ = task_idx, C_ = dag.C[task_idx - 1])
+
+                    # get the task execution time
+                    task_wcet = dag.C[task_idx - 1]
+                    if execution_model == "half_random":
+                        c_this = random.randint(math.floor(task_wcet/2), task_wcet)
+                    elif execution_model == "full_random":
+                        c_this = random.randint(1, task_wcet)
+                    else:
+                        c_this = task_wcet
+                    
+                    # assign task to core
+                    tau = Job(idx_ = task_idx, C_ = c_this)
                     cores[m].assign(tau)
                     r_queue.remove(task_idx)
                     trace(0, t, "Job {:d} assgined to Core {:d}".format(task_idx, m))
@@ -224,10 +226,19 @@ if __name__ == "__main__":
     # enable logger
     trace_init(log_to_file = False)
     
+    # example taskset
+    G_exp = {1:[2,3,4], 2:[5,6], 3:[7,8], 4:[11], 5:[9], 6:[9], 7:[10], 8:[10], 9:[11], 10:[11], 11:[]}
+    C_exp = [1, 5, 6, 7, 3, 6, 4, 2, 9, 8, 1]
+    dag = DAGTask(G_exp, C_exp)
+
+    pprint(("V:", dag.V))
+    pprint(("C:", dag.C))
+    pprint(("Pre:", dag.pre))
+
     print(" ")
-    sched("random")
+    sched(dag, number_of_cores = 2, algorithm = "random", execution_model = "WCET")
     
     print(" ")
-    sched("eligibility")
+    sched(dag, number_of_cores = 2, algorithm = "eligibility", execution_model = "WCET")
     
     print(" ")

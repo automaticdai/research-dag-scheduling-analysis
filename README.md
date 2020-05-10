@@ -22,8 +22,8 @@ Supported scheduling alogrithm:
 Suppored execution models:
 
 - WCET
-- BCET
-- Random and half-random
+- Full random
+- Half random
 
 For random, two random algorithms can be selected:
 
@@ -31,6 +31,17 @@ For random, two random algorithms can be selected:
 - Uniformed distributed
 
 (*) Note the normal distributed model is thresholded by 3 delta.
+
+
+## Install & Run
+
+Before run, install Python libraries using:
+
+`> python3 -m pip install -r "requirements.txt"`
+
+Then, run the simulator with:
+
+`> python3 src/main.py`
 
 
 ## License
