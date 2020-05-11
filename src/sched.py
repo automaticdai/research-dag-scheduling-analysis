@@ -28,14 +28,18 @@ PATH_OF_SRC = os.path.dirname(os.path.abspath(__file__))
 LOG_TO_FILE_LOCATION = PATH_OF_SRC + "/../results/log.txt"
 
 
-def trace_init(log_to_file):
+def trace_init(log_to_file = False, debug = False):
     LOG_FORMAT = '[%(asctime)s-%(levelname)s: %(message)s]'
     LOG_DATEFMT = '%Y-%m-%d %H:%M:%S'
+
+    if debug: log_mode = logging.DEBUG
+    else: log_mode = logging.INFO
+
     if log_to_file == True:
-        logging.basicConfig(filename='log.txt', filemode='a', level=logging.INFO,
+        logging.basicConfig(filename='log.txt', filemode='a', level=log_mode,
                             format=LOG_FORMAT, datefmt=LOG_DATEFMT)
     else:
-        logging.basicConfig(level=logging.INFO, format=LOG_FORMAT, datefmt=LOG_DATEFMT)
+        logging.basicConfig(level=log_mode, format=LOG_FORMAT, datefmt=LOG_DATEFMT)
 
 
 def trace(msglevel, timestamp, message):
@@ -142,12 +146,24 @@ def sched(dag, number_of_cores, algorithm = "random", execution_model = "WCET"):
     r_queue.append(1)
     w_queue.remove(1)
 
+    # apply randomized to execution times
+
+
+
     while t < T_MAX and not finished:
         trace(0, t, "Scheduling point reached!")
 
         # update the ready queue (by iterative all left nodes)
-        for i in w_queue:
-            if all(elem in f_queue  for elem in dag.pre[i]):
+        w_queue_c = w_queue.copy()
+        f_queue_c = f_queue.copy()
+
+        for i in w_queue_c:
+            all_matched = True
+            for elem in dag.pre[i]:
+                if elem not in f_queue_c:
+                    all_matched = False
+
+            if all_matched:
                 r_queue.append(i)
                 w_queue.remove(i)
         
