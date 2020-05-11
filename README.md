@@ -41,7 +41,13 @@ Before run, install Python libraries using:
 
 Then, run the simulator with:
 
-`> python3 src/main.py`
+`> python3 src/main.py >> results/result.log`
+
+and final:
+
+'> python3 src/analysis.py'
+
+The results will be in the `results` folder.
 
 
 ## License

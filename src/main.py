@@ -23,7 +23,7 @@ from pathlib import Path
 class Simulator:
     def __init__(self):
         self.taskset_size = 20
-        self.randomization_times = 100
+        self.randomization_times = 200
 
 
     def config(self):
@@ -96,16 +96,17 @@ class Simulator:
 
                                 if algorithm_name == "random":
                                     for _ in range(self.randomization_times):
-                                        #makespan = sched(dag, number_of_cores = m, algorithm = algorithm_name, execution_model = e_model)
+                                        makespan = sched(dag, number_of_cores = m, algorithm = algorithm_name, execution_model = e_model)
                                         makespans.append(makespan)
                                         n = n + 1
                                 else:
-                                    #makespan = sched(dag, number_of_cores = m, algorithm = algorithm_name, execution_model = e_model)
+                                    makespan = sched(dag, number_of_cores = m, algorithm = algorithm_name, execution_model = e_model)
                                     makespans.append(makespan)
                                     n = n + 1
                         else:
-                            # if no randomized involved
-                            #makespan = sched(dag, number_of_cores = m, algorithm = algorithm_name, execution_model = e_model)
+                            # if no randomization is involved, i.e., eligibility + WCET
+                            dag.C = dag_C_origin.copy()
+                            makespan = sched(dag, number_of_cores = m, algorithm = algorithm_name, execution_model = e_model)
                             makespans.append(makespan)
                             n = n + 1
                         
@@ -113,7 +114,7 @@ class Simulator:
                         print(message)
                         #print(task_idx, ";", algorithm_name, ";", m, ";", e_model, ";", makespans)
             
-            print(n)
+            #print(n)
 
 
 if __name__ == "__main__":

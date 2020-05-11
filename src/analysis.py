@@ -82,7 +82,7 @@ def plot():
     boxplot_label = []
     cnt = 0
 
-    with open('./results.log', 'r') as f:
+    with open('./results/results.log', 'r') as f:
         for line in f:
             cc = line.strip().split(";")
             
@@ -120,9 +120,9 @@ def plot():
 
                 fig, ax1 = plt.subplots(figsize=(10, 6))
                 fig.canvas.set_window_title('MOCHA Analysis Toolbox')
-                plt.subplots_adjust(left=0.075, right=0.95, top=0.9, bottom=0.25)
+                plt.subplots_adjust(left=0.075, right=0.95, top=0.9, bottom=0.35)
 
-                plt.boxplot(boxplot_data)
+                plt.boxplot(boxplot_data, showfliers=True)
 
                 xtickNames = plt.setp(ax1, xticklabels=boxplot_label)
                 plt.setp(xtickNames, rotation=80, fontsize=10)
