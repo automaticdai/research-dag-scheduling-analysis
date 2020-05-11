@@ -82,7 +82,7 @@ def plot():
     boxplot_label = []
     cnt = 0
 
-    with open('results.log', 'r') as f:
+    with open('./results.log', 'r') as f:
         for line in f:
             cc = line.strip().split(";")
             
@@ -109,7 +109,7 @@ def plot():
                 i[0], i[1], i[2], i[3], i[4], i[5], i[6], i[7], i[8], i[9], i[10], i[11] = i[0], i[6], i[1], i[7], i[2], i[8], i[3], i[9], i[4], i[10], i[5], i[11]
                 j[0], j[1], j[2], j[3], j[4], j[5], j[6], j[7], j[8], j[9], j[10], j[11] = j[0], j[6], j[1], j[7], j[2], j[8], j[3], j[9], j[4], j[10], j[5], j[11]
 
-                # use RTA
+                # use RTA to get makespan
                 makespan = rta_np(taskset_idx, 2)
                 boxplot_data.insert(0, [makespan])
                 boxplot_label.insert(0, "rta-m2")
@@ -140,4 +140,5 @@ def plot():
                 boxplot_data = []
 
 
+#print(rta_np(18, 4))
 plot()

@@ -146,10 +146,6 @@ def sched(dag, number_of_cores, algorithm = "random", execution_model = "WCET"):
     r_queue.append(1)
     w_queue.remove(1)
 
-    # apply randomized to execution times
-
-
-
     while t < T_MAX and not finished:
         trace(0, t, "Scheduling point reached!")
 
@@ -188,15 +184,9 @@ def sched(dag, number_of_cores, algorithm = "random", execution_model = "WCET"):
 
                     # get the task execution time
                     task_wcet = dag.C[task_idx - 1]
-                    if execution_model == "half_random":
-                        c_this = random.randint(math.floor(task_wcet/2), task_wcet)
-                    elif execution_model == "full_random":
-                        c_this = random.randint(1, task_wcet)
-                    else:
-                        c_this = task_wcet
                     
                     # assign task to core
-                    tau = Job(idx_ = task_idx, C_ = c_this)
+                    tau = Job(idx_ = task_idx, C_ = task_wcet)
                     cores[m].assign(tau)
                     r_queue.remove(task_idx)
                     trace(0, t, "Job {:d} assgined to Core {:d}".format(task_idx, m))

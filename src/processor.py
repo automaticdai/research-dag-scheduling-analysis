@@ -20,7 +20,7 @@ class Memory:
 
 
 class Cache(Storage):
-    def __init__(self, type_ = "L1"):
+    def __init__(self, type_, shared_=False):
         if type_ == "L1":
             self.type = type_
             self.size = 1
@@ -32,7 +32,7 @@ class Cache(Storage):
         elif type_ == "L3":
             self.type = type_
             self.size = 100
-            self.miss_penalyu = 200
+            self.miss_penalty = 200
         else:
             # should have an exception
             raise ValueError("Not supported cache type")

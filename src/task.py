@@ -43,8 +43,8 @@ class DAGTask(Task):
         
         super().__init__(self)
 
-        self.G = G_
-        self.C = C_
+        self.G = G_.copy()
+        self.C = C_.copy()
 
         # get all vertices
         self.V = sorted(self.G.keys())
@@ -57,3 +57,11 @@ class DAGTask(Task):
                     self.pre[i].append(key)
                 else:
                     self.pre[i] = [key]
+
+
+    def solve_precondition(self):
+        pass
+
+
+    def load_from_file(self):
+        pass
