@@ -122,10 +122,19 @@ def plot():
                 fig.canvas.set_window_title('MOCHA Analysis Toolbox')
                 plt.subplots_adjust(left=0.075, right=0.95, top=0.9, bottom=0.35)
 
-                plt.boxplot(boxplot_data, showfliers=True)
+                bp1 = plt.boxplot(boxplot_data,
+                                    notch=False,  # notch shape
+                                    vert=True,  # vertical box alignment
+                                    patch_artist=True,  # fill with color
+                                    showfliers=True)
+
+                colors = ['red', 'pink', 'pink', 'lightblue', 'lightblue', 'lightgreen', 'lightgreen', 'red', 'pink', 'pink', 'lightblue', 'lightblue', 'lightgreen', 'lightgreen']
+                for idx, box in enumerate(bp1['boxes']):
+                    box.set_facecolor(colors[idx])
+                    #box.set(color=colors[idx], linewidth=1)
 
                 xtickNames = plt.setp(ax1, xticklabels=boxplot_label)
-                plt.setp(xtickNames, rotation=80, fontsize=10)
+                plt.setp(xtickNames, rotation=85, fontsize=10)
                 
                 ax1.set_title('Comparison of Eligibility and Random (Tau {:d})'.format(taskset_idx))
                 ax1.set_ylabel('Makespan')
@@ -133,6 +142,8 @@ def plot():
                 # plot and save
                 #plt.show()
                 fig.savefig('./results/boxplot_{:d}.png'.format(taskset_idx))
+
+                plt.close(fig)
 
                 # clean
                 cnt = 0
