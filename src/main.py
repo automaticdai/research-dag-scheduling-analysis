@@ -14,6 +14,7 @@ import random
 import math
 import copy
 import networkx as nx
+from tqdm import tqdm
 from pprint import pprint
 
 from task import DAGTask, Job
@@ -23,7 +24,7 @@ from pathlib import Path
 class Simulator:
     def __init__(self):
         self.taskset_size = 20
-        self.randomization_times = 200
+        self.randomization_times = 100
 
 
     def config(self):
@@ -40,7 +41,7 @@ class Simulator:
         random.seed(0)
 
         # iteratives tasksets
-        for task_idx in range(self.taskset_size):
+        for task_idx in tqdm(range(self.taskset_size)):
             # generate random seeds, each seed produce a different set of WCETs
             random_seeds = random.sample(range(self.randomization_times * 100), self.randomization_times)
 
@@ -75,7 +76,9 @@ class Simulator:
             # # # # # # # # # #
             # iteratives algorithms
             for algorithm_name in ("random", "eligibility"):
+                # iteratives number of cores
                 for m in (2, 4):
+                    # iteratives exeuction models
                     for e_model in ("WCET", "full_random", "half_random"):
                         makespans = []
                         makespan = -1
