@@ -13,22 +13,25 @@ Simulate DAG tasksets execution on multi-cores. This package supports:
 - configurable scheduling and task parameters
 
 
-Supported scheduling alogrithm:
+Supported scheduling alogrithms:
 
 - Non-preemptive random
 - Non-preemptive with eligibility ordering
-- Preemptive workload distribution model
+- (Todo) Preemptive Fixed-priority Scheduling 
+- (Todo) Preemptive workload distribution model
+
 
 Suppored execution models:
 
 - WCET
-- Full random
-- Half random
+- Full-random: [1, WCET]
+- Half-random: [WCET/2, WCET]
+- Random-a,b: [a * WCET, b * WCET]
 
-For random, two random algorithms can be selected:
+For random, two algorithms can be chosen from:
 
 - Normal distributed
-- Uniformed distributed
+- (Todo) Uniformed distributed
 
 (*) Note the normal distributed model is thresholded by 3 delta.
 
@@ -43,11 +46,16 @@ Then, run the simulator with:
 
 `> python3 src/main.py >> results/result.log`
 
-and final:
+and finally:
 
-'> python3 src/analysis.py'
+`> python3 src/analysis.py`
 
 The results will be in the `results` folder.
+
+
+## Known Issues
+
+n/a
 
 
 ## License
