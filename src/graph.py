@@ -6,6 +6,8 @@
 # Real-Time Systems Group
 # University of York, UK
 
+import networkx as nx
+
 def find_all_paths(G_, start_vertex, end_vertex, path=[]):
     """ find all paths from start_vertex to end_vertex in graph """
     graph = G_
@@ -64,9 +66,25 @@ def find_associative_nodes(G_, candidate_nodes, critical_path):
     return associated_nodes
 
 
+def find_predecesor(G, node):
+    precs = []
+    for key in G:
+        if node in G[key]:
+            precs.append(key)
+
+    return precs
+
+
+def find_successor(G, node):
+    return G[node]
+
+
 if __name__ == "__main__":
     G = {1:[2,3,4], 2:[5,6], 3:[7,8], 4:[11], 5:[9], 6:[9], 7:[10], 8:[10], 9:[11], 10:[11], 11:[]}
     C = [1, 5, 6, 7, 3, 6, 4, 2, 9, 8, 1]
 
     print(find_all_paths(G, 1, 11))
     print(find_longest_path_dfs(G, 1, 11, C))
+    
+    print(find_predecesor(G, 10))
+    print(find_successor(G, 6))
