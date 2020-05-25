@@ -9,14 +9,348 @@
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
+from matplotlib import rc
+import pickle
+
 import networkx as nx
 
-from graph import find_longest_path_dfs
+from graph import find_longest_path_dfs, find_predecesor, find_successor, get_subpath_between
+
+
+def gen_node_pairs_from_path(path):
+    pairs = []
+
+    for i in path:
+        for j in path:
+            if j > i:
+                pairs.append((i,j))
+
+    return pairs
+
+
+def merge_nodes(paths, trace):
+    
+    if trace == []:
+        # initialization
+        path_travelled = [0] * len(paths) 
+
+    path_p = []
+    p = paths[0][0]
+
+    for i, pp in enumerate(paths):
+        print(pp)
+
+        if pp[0] == p:
+            path_p.append(pp)
+            path_travelled[i] = 1
+        
+        ##merge_nodes(path_p, [])
+
+    print("OK")
+
+
+
+    # p = paths[0][0]
+    # path_p = []
+
+    # # is there any more mergable?
+    # mergable = False
+    # for pp in paths:
+    #     if pp[0] == p:
+    #         print(pp)
+    #         path_p.append(pp)
+    #         mergable = True
+    
+    # if mergable:
+    #     merged = []
+    #     p = merge_nodes(new_paths)
+    #     merged.append(p)
+    # # if not (forward) mergable any more, do the backward match and return
+    # else:
+    #     # backward match
+    #     return paths
+
+
+def find_providers_consumers(G, lamda, VN):
+    """ Find provides and consumers by decompose the DAG graph
+    """
+    # Exception handling: 
+    # - VN = []
+
+    theta = []         # consumers list
+    theta_p = []       # providers list
+    theta_p_super = [] # super provider list
+
+    cp_mapping = {}    
+    pc_mapping = {}    # mapping between consumers and providers
+    pc_mapping_super = {}
+
+    legal_spans = []   # legal spans
+
+
+    # Step I. get consumers
+    n_s = lamda[0]
+    n_e = lamda[-1]
+
+    node_pairs = gen_node_pairs_from_path(lamda)
+
+    for node_pair in node_pairs:
+        n_a, n_b = node_pair
+
+        for path in nx.all_simple_paths(G, n_a, n_b):
+            #print(path)
+            path.remove(n_a)
+            path.remove(n_b)
+
+            #if path is not []:
+            found_c_nodes = False
+            for i in lamda:
+                if i in path and i is not n_a and i is not n_b:
+                    found_c_nodes = True
+
+            if not found_c_nodes:
+                #print("Match")
+                if path:
+                    theta.append(path)
+
+    # merge consumers
+    # H = nx.DiGraph()
+    # for p in theta_t:
+    #     edeges = zip(p[0:-2], p[1:-1])
+    #     H.add_edges_from(edeges)
+    # print(H.edges())
+
+
+    # Step II. get providers
+    #print("cp_mapping:")
+    for idx, theta_i in enumerate(theta):
+        for t in G.predecessors(theta_i[0]):
+            if t in lamda:
+                c_a = t
+         
+        for t in G.successors(theta_i[-1]):
+            if t in lamda:
+                c_b = t
+
+        theta_p_i = get_subpath_between(lamda, c_a, c_b)
+
+        duplicated = False
+        for idx_pp, pp in enumerate(theta_p):
+            if pp == theta_p_i:
+                duplicated = True
+                pc_mapping[idx_pp].append(idx)
+                cp_mapping[idx] = idx_pp
+
+        if not duplicated:
+            theta_p.append(theta_p_i)
+            pc_mapping[len(theta_p)-1] = [idx]
+            cp_mapping[idx] = len(theta_p)-1
+        #print(theta_i, "-->", theta_p_i)
+
+
+    # Step III. merge the super provider (greeding)
+    ppp = []
+    for v_i in lamda:
+        match = False
+        
+        for k, p_i in enumerate(theta_p):
+            if v_i in p_i:
+                match = True
+                break
+        
+        if not match:
+            if ppp:
+                theta_p_super.append(ppp)
+            else:
+                theta_p_super.append([v_i])
+            ppp = []
+        else:
+            ppp.append(v_i)
+    theta_p_super.append([v_i])
+
+
+    # Step IV. get the legal length & the new cp mapping
+    #print("----------")
+    #print("cp_mapping_super:")
+    for i, v in enumerate(theta):
+        p_i = cp_mapping[i]
+        p = theta_p[p_i]     # provider p_i of consumer i
+
+        for k, super_p in enumerate(theta_p_super):
+            if set(p).issubset(set(super_p)):
+                if k in pc_mapping_super:
+                    pc_mapping_super[k].append(i)
+                else:
+                    pc_mapping_super[k] = [i]
+                break
+
+        
+
+        #print(v, "-->", theta_p_super[k]) 
+
+
+    # unfinished!
+    # calculate the relative legal starting time and end time within a provider
+    C = {}
+    for u, _, weight in G.edges(data='label'):
+        C[u] = weight
+    C[u+1] = 1
+
+    legal_t_s = 0 
+    legal_t_e = 0
+    span = [legal_t_s, legal_t_e]
+    legal_spans.append(span)
+
+
+    return (theta_p_super, theta, pc_mapping_super, legal_spans)
+
+
+def rta_new(task_idx, m):
+    """ Proposed new RTA
+    """
+
+    # << load DAG task <<
+    dag_task_file = "../dag-gen-rnd/data/Tau_{:d}.gpickle".format(task_idx)
+    G = nx.read_gpickle(dag_task_file)
+
+    # formulate the graph list
+    G_dict = {}
+    C_dict = {}
+    V_array = []
+    max_key = 0
+    for u, v, weight in G.edges(data='label'):
+        if u not in G_dict:
+            G_dict[u] = [v]
+        else:
+            G_dict[u].append(v)
+
+        if v > max_key:
+            max_key = v
+        
+        if u not in V_array:
+            V_array.append(u)
+        if v not in V_array:
+            V_array.append(v)
+        
+        C_dict[u] = weight
+    G_dict[max_key] = []
+
+    # formulate the c list (c[0] is c for v1!!)
+    C_exp = []
+    for key in sorted(C_dict):
+        C_exp.append(C_dict[key])
+
+    C_exp.append(1)
+
+    V_array.sort()
+    Li, lamda = find_longest_path_dfs(G_dict, V_array[0], V_array[-1], C_exp)
+    Wi = sum(C_exp)
+
+    VN_array = V_array.copy()
+
+    for i in lamda:
+        if i in VN_array:
+            VN_array.remove(i)
+
+    # >> end of load DAG task >>
+
+    providers, consumers, pc_mapping, legal_span = find_providers_consumers(G, lamda, VN_array)
+
+    # A. Analysis-based
+    llens = {}
+    for idx, provider in enumerate(providers):
+        # for each provider, find the longest theta
+        #print(provider)
+        if (idx == 0) or (idx == len(providers) - 1):
+            # skip the source and sink nodes
+            continue
+
+        if idx in pc_mapping:
+            max_llens = 0
+            for i in pc_mapping[idx]:
+                llen = 0
+                for v in consumers[i]:
+                    llen = llen + C_exp[v-1]
+                
+                llens[i] = llen
+                #print("C(", consumers[i], ") = ", llen)
+
+                if llen > max_llens:
+                    max_llens = llen
+
+        # [TODO] be careful there could be more than one super provider
+        if idx == 2:
+            raise Exception("Not support yet!")
+        
+        Wi_p = Wi
+        Li_p = Li
+        Ri_m = max_llens + 1.0 / (m - 1) * (Wi_p - Li_p - max_llens)
+
+        if Li_p >= Ri_m:
+            # case 1
+            alpha_i = Wi_p - Li_p
+            beta_i = 0
+        else:
+            # case 2
+            # calculate beta
+            beta_i = min((Ri_m - Li_p), max_llens)
+
+            # sort llens
+            llens_sorted_array = []
+            for key in llens:
+                value = llens[key]
+                llens_sorted_array.append(value) 
+            llens_sorted_array.sort(reverse=True)
+
+            x = {}
+            for k in range(m):
+                if k < len(llens_sorted_array):
+                    llen_k = llens_sorted_array[k]
+                else:
+                    llen_k = 0
+                
+                a = 0
+                for i in provider:
+                    a = a + C_exp[i-1]
+                
+                b = 0
+                for i in range(k):
+                    if i < len(llens_sorted_array):
+                        b = b + llens_sorted_array[i]
+                    else:
+                        b = b + 0
+                
+                x[k] = llen_k + 1.0 / (m - 1) * (a - b)
+
+            # calculate alpha
+            w_not_accomodated = 0
+            for i in range(m-1):
+                w_not_accomodated = w_not_accomodated + max(x[i] - Li_p, 0)
+            alpha_i = a - w_not_accomodated
+        
+        # calculate the response time bound
+        rta_a = Li_p + (1.0 / m) * (Wi_p - Li_p - alpha_i - beta_i) + beta_i
+
+
+    rta_baseline = rta_np(tau,m)
+    #print(rta_baseline)
+
+    #print(rta_a)
+
+    # B. Heuristic-based
+    rta_b = 0
+    
+    # C. Search-based
+    rta_c = 0
+
+    return (rta_a, rta_b, rta_c)
 
 
 def rta_np(task_idx, m):
+    """ Classical RTA approach
+    """
     # load the DAG task
-    dag_task_file = "./data/Tau_{:d}.gpickle".format(task_idx)
+    dag_task_file = "../dag-gen-rnd/data/Tau_{:d}.gpickle".format(task_idx)
     G = nx.read_gpickle(dag_task_file)
 
     # formulate the graph list
@@ -51,33 +385,23 @@ def rta_np(task_idx, m):
     V_array.sort()
     Li, _ = find_longest_path_dfs(G_dict, V_array[0], V_array[-1], C_exp)
     Wi = sum(C_exp)
+    # end of load DAG task
 
     makespan = Li + 1 / m * (Wi - Li)
 
     return makespan
 
 
-# df = pd.DataFrame(index = [x for x in range(0,10)])
-# for col in range(1,5):
-#     df[col] = df.index * col/10
-
-# fig, ax = plt.subplots()
-# bp = df.plot.box(
-#             ax=ax,
-#             whis=[5, 95],
-#             showcaps=True,
-#             showfliers=False,
-#             whiskerprops = {'color':'k','linewidth':0.5,'linestyle':'solid'},
-#             capprops={'color': 'k', 'linewidth': 0.5, 'linestyle': 'solid'},
-#             medianprops = {'color':'k','linewidth': 0.5, 'linestyle': 'solid'}
-#             )
-
-#result_path = "./results/{:d}/{:d}/{:s}/{:s}".format(task_idx, m, algorithm_name, e_model)
-#Path(result_path).mkdir(parents=True, exist_ok=True)
+# Bars L: x < y
+# Bars EQ: x = y
+# Bars G: x > y
+# Column: 'WCET-m2','Full-m2','Half-m2','WCET-m4','Full-m4', 'Half-m4'
+bars_L = [0, 0, 0, 0, 0, 0]
+bars_EQ = [0, 0, 0, 0, 0, 0]
+bars_G = [0, 0, 0, 0, 0, 0]
 
 
-def plot():
-    result_dict = {}
+def plot_boxplots_from_trace():
     boxplot_data = []
     boxplot_label = []
     cnt = 0
@@ -93,8 +417,24 @@ def plot():
 
             makespans_raw = cc[4].lstrip("[").rstrip("]").split(",")
             makespans = []
-            for i in makespans_raw:  makespans.append(int(i))
-            result_dict[taskset_idx] = makespans
+            for i in makespans_raw:
+                ms = int(i)
+                # expand data (simply repeat) for non-randomised result
+                # this to make sure each bar chart has the same number of data
+                if policy=="eligibility":
+                    for _ in range(100):
+                        if e_model=="WCET":
+                            for _ in range(100):
+                                makespans.append(ms)
+                        else:
+                            makespans.append(ms)
+                else:
+                    # Random + WCET
+                    if e_model=="WCET":
+                        makespans.append(ms)
+                    else:
+                        makespans.append(ms)
+
             boxplot_data.append(makespans)
 
             label = policy + "-" + e_model + "-m" + str(m)
@@ -102,6 +442,7 @@ def plot():
 
             cnt = cnt + 1
 
+            # every 12 is for one test case
             if cnt == 12:
                 # reorder the sequence
                 i = boxplot_data
@@ -145,11 +486,106 @@ def plot():
 
                 plt.close(fig)
 
+                # count the frequency
+                
+                # Bars L: x < y
+                # Bars EQ: x = y
+                # Bars G: x > y
+                # Column: 'WCET-m2','Full-m2','Half-m2','WCET-m4','Full-m4', 'Half-m4'
+
+                # WCET-m2
+                column_idx = [1,3,5,8,10,12]
+                for column in range(6):
+                    b = np.array(boxplot_data[0 + column_idx[column]]) #random
+                    a = np.array(boxplot_data[1 + column_idx[column]]) #EO
+
+                    l = np.count_nonzero(a < b)
+                    eq = np.count_nonzero(a == b)
+                    g = np.count_nonzero(a > b)
+
+                    bars_L[column] = bars_L[column] + l
+                    bars_EQ[column] = bars_EQ[column] + eq
+                    bars_G[column] = bars_G[column] + g
+
+                print("One testset done.")
+
                 # clean
                 cnt = 0
                 boxplot_label = []
                 boxplot_data = []
 
+    # plot the frequency table
+    for i in range(6):
+        bars_L[i] = bars_L[i] / 2000
+        bars_EQ[i] = bars_EQ[i] / 2000
+        bars_G[i] = bars_G[i] / 2000
 
-#print(rta_np(18, 4))
-plot()
+    plot_stacked_barchart()
+
+
+
+
+def plot_stacked_barchart():
+    # y-axis in bold
+    rc('font', weight='bold')
+
+    # bars1 = [12, 28, 1, 8, 8, 22]
+    # bars2 = [28, 7, 16, 4, 10, 10]
+    # bars3 = [25, 3, 23, 25, 22, 17]
+
+    # Heights of bars1 + bars2
+    bars = np.add(bars_L, bars_EQ).tolist()
+
+    # The position of the bars on the x-axis
+    r = [0, 1, 2, 4, 5, 6]
+
+    # Names of group and bar width
+    names = ['WCET-m2','Full-m2','Half-m2','WCET-m4','Full-m4', 'Half-m4']
+    barWidth = 0.8
+
+    # Create brown bars
+    plt.bar(r, bars_L, color='#f55442', edgecolor='black', width=barWidth)
+    # Create green bars (middle), on top of the firs ones
+    plt.bar(r, bars_EQ, bottom=bars_L, color='#5145f7', edgecolor='black', width=barWidth)
+    # Create green bars (top)
+    plt.bar(r, bars_G, bottom=bars, color='#42eb63', edgecolor='black', width=barWidth)
+
+    # Custom X axis
+    plt.xticks(r, names, fontweight='bold')
+    #plt.xlabel("Method Group")
+    plt.ylabel("Frequency")
+    plt.legend(["EO < RND","EO = RND","EO > RND"])
+
+    # Show graphic
+    plt.show()
+
+
+def plot_rta():
+    boxplot_data = []
+    diff_array = pickle.load(open("save.p", "rb"))
+
+    plt.boxplot(diff_array)
+    plt.show()
+
+
+def exp_rta():
+    diff_array = []
+
+    print("{:>12s} {:>12s} {:>12s}".format("Baseline", "RTA_New", "Diff"))
+    print("----------------------------------------")
+    for tau in range(10000):
+        rta_baseline = rta_np(tau, m=4)
+        rta_a, rta_b, rta_c = rta_new(tau, m=4)
+        diff = max((rta_baseline - rta_a), 0) / rta_baseline * 100
+        diff_array.append(diff)
+        print("{:>12.1f} {:>12.1f} {:>12.1f}".format(rta_baseline, rta_a, diff))
+    print("----------------------------------------")
+    pickle.dump(diff_array, open("save.p", "wb"))
+
+
+if __name__ == "__main__":
+    #plot_boxplots_from_trace()
+
+    #exp_rta()
+    plot_rta()
+

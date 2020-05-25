@@ -12,8 +12,9 @@ class Job:
     - a computational time
     - a deadline
     """ 
-    def __init__(self, idx_=0, C_=0, D_=0):
+    def __init__(self, idx_=0, C_=0, D_=0, taskid_=0):
         self.idx = idx_
+        self.of_task = taskid_
         self.C = C_
         self.D = D_
 
