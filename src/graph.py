@@ -6,7 +6,8 @@
 # Real-Time Systems Group
 # University of York, UK
 
-import networkx as nx
+# Note:
+# This library is indepdent of the NetworkX library.
 
 def find_all_paths(G_, start_vertex, end_vertex, path=[]):
     """ find all paths from start_vertex to end_vertex in graph """
@@ -31,6 +32,19 @@ def find_all_paths(G_, start_vertex, end_vertex, path=[]):
                 paths.append(p)
     
     return paths
+
+
+
+def get_subpath_between(P, a, b):
+    ''' Get a subpath in P where the starting node is a, and the end node is b 
+    '''
+    for idx, v in enumerate(P):
+        if v == a:
+            idx_a = idx + 1
+        if v == b:
+            idx_b = idx
+
+    return P[idx_a:idx_b]
 
 
 def find_longest_path_dfs(G_, start_vertex, end_vertex, weights):
