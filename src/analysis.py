@@ -332,7 +332,7 @@ def rta_new(task_idx, m):
         rta_a = Li_p + (1.0 / m) * (Wi_p - Li_p - alpha_i - beta_i) + beta_i
 
 
-    rta_baseline = rta_np(tau,m)
+    rta_baseline = rta_np(task_idx,m)
     #print(rta_baseline)
 
     #print(rta_a)
@@ -562,10 +562,46 @@ def plot_stacked_barchart():
 
 def plot_rta():
     boxplot_data = []
-    diff_array = pickle.load(open("save.p", "rb"))
 
-    plt.boxplot(diff_array)
+    diff_array = pickle.load(open("m2.p", "rb"))
+    boxplot_data.append(diff_array)
+    cm2 = (sum(i > 0  for i in diff_array))
+
+    diff_array = pickle.load(open("m4.p", "rb"))
+    boxplot_data.append(diff_array)
+    cm4 = (sum(i > 0  for i in diff_array))
+
+    diff_array = pickle.load(open("m6.p", "rb"))
+    boxplot_data.append(diff_array)
+    cm6 = (sum(i > 0  for i in diff_array))
+
+    diff_array = pickle.load(open("m8.p", "rb"))
+    boxplot_data.append(diff_array)
+    cm8 = (sum(i > 0  for i in diff_array))
+
+    plt.boxplot(boxplot_data)
+    plt.xticks([1,2,3,4], ["m=2", "m=4", "m=6", "m=8"])
+    plt.ylabel("Precentage of Improvement (%)")
+
     plt.show()
+
+    # plot the bar charts
+    N = 4
+    men_means = (cm2, cm4, cm6, cm8)
+    women_means = (10000-cm2, 10000-cm4, 10000-cm6, 10000-cm8)
+
+    ind = np.arange(N) 
+    width = 0.35       
+    plt.bar(ind, men_means, width, label='RTA_new is better')
+    plt.bar(ind + width, women_means, width, label='RTA_new is not better')
+
+    plt.ylabel('# of cases')
+    plt.title('RTA_new compared with RTA_traditional')
+
+    plt.xticks(ind + width / 2, ('m = 2', 'm = 4', 'm = 6', 'm = 8'))
+    plt.legend(loc='best')
+    plt.show()
+
 
 
 def exp_rta():
@@ -574,13 +610,14 @@ def exp_rta():
     print("{:>12s} {:>12s} {:>12s}".format("Baseline", "RTA_New", "Diff"))
     print("----------------------------------------")
     for tau in range(10000):
-        rta_baseline = rta_np(tau, m=4)
-        rta_a, rta_b, rta_c = rta_new(tau, m=4)
+        m = 8
+        rta_baseline = rta_np(tau, m)
+        rta_a, rta_b, rta_c = rta_new(tau, m)
         diff = max((rta_baseline - rta_a), 0) / rta_baseline * 100
         diff_array.append(diff)
         print("{:>12.1f} {:>12.1f} {:>12.1f}".format(rta_baseline, rta_a, diff))
     print("----------------------------------------")
-    pickle.dump(diff_array, open("save.p", "wb"))
+    pickle.dump(diff_array, open("m8.p", "wb"))
 
 
 if __name__ == "__main__":
