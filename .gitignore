@@ -3,3 +3,4 @@ results/
 data/
 .vscode/
 *.log
+*.p

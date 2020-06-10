@@ -113,7 +113,7 @@ def sched(dag, number_of_cores, algorithm = "random", execution_model = "WCET"):
         
         EO_eligibility = {}
 
-        # I. C
+        # I. Critical
         offset = EO_ELIG_BASE_C
         sorted_x = sorted({k: EO_WCET[k] for k in EO_V_C}.items(), key=operator.itemgetter(1), reverse=False)
         
@@ -121,7 +121,7 @@ def sched(dag, number_of_cores, algorithm = "random", execution_model = "WCET"):
             EO_eligibility[i[0]] = offset
             offset = offset + 1
         
-        # II. A
+        # II. Associate
         # order by WCET (longest first)
         offset = EO_ELIG_BASE_A
         sorted_x = sorted({k: EO_WCET[k] for k in EO_V_A}.items(), key=operator.itemgetter(1), reverse=False)
@@ -129,7 +129,7 @@ def sched(dag, number_of_cores, algorithm = "random", execution_model = "WCET"):
             EO_eligibility[i[0]] = offset
             offset = offset + 1
 
-        # III. NC
+        # III. Non-Critical
         offset = EO_ELIG_BASE_NC
         sorted_x = sorted({k: EO_WCET[k] for k in EO_V_NC}.items(), key=operator.itemgetter(1), reverse=False)
         for i in sorted_x:
