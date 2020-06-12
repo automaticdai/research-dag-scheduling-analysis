@@ -67,8 +67,7 @@ def find_longest_path_dfs(G_, start_vertex, end_vertex, weights):
 
 
 def find_associative_nodes(G_, candidate_nodes, critical_path):
-    # find associative nodes that could block the critical path
-
+    """ find associative nodes that could block the critical path """
     associated_nodes = []
 
     # if there is any route from A -> B, then B is associated with A
@@ -93,12 +92,76 @@ def find_successor(G, node):
     return G[node]
 
 
+def find_ancestors(G, node, path=[]):
+    v_source = source(G)
+    a = []
+    
+    #print(node)
+
+    if node == v_source:
+        return
+    
+    predecesor_nodes = find_predecesor(G, node)
+
+    for v in predecesor_nodes:
+        path.append(v)
+        find_ancestors(G, v, path)
+    
+    #print(path)
+
+    for i in path:
+        if i not in a:
+            a.append(i)
+    
+    a.sort()
+
+    return a
+
+
+def find_descendants(G, node, path=[]):
+    v_sink = sink(G)
+    a = []
+    
+    #print(node)
+
+    if node == v_sink:
+        return
+    
+    suscessor_nodes = find_successor(G, node)
+
+    for v in suscessor_nodes:
+        path.append(v)
+        find_descendants(G, v, path)
+    
+    #print(path)
+
+    for i in path:
+        if i not in a:
+            a.append(i)
+    
+    a.sort()
+
+    return a
+
+
+def sink(G):
+    k = G.keys()
+    return max(k) 
+
+
+def source(G):
+    return 1
+
+
 if __name__ == "__main__":
     G = {1:[2,3,4], 2:[5,6], 3:[7,8], 4:[11], 5:[9], 6:[9], 7:[10], 8:[10], 9:[11], 10:[11], 11:[]}
     C = [1, 5, 6, 7, 3, 6, 4, 2, 9, 8, 1]
 
-    print(find_all_paths(G, 1, 11))
-    print(find_longest_path_dfs(G, 1, 11, C))
+    #print(find_all_paths(G, 1, 11))
+    #print(find_longest_path_dfs(G, 1, 11, C))
     
-    print(find_predecesor(G, 10))
-    print(find_successor(G, 6))
+    #print(find_predecesor(G, 10))
+    #print(find_successor(G, 6))
+
+    print(find_descendants(G, 2))
+    print(find_ancestors(G, 2))
