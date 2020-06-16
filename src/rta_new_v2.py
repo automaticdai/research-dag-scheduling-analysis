@@ -106,8 +106,8 @@ def test_parallelism(G, node, n):
 
 
 def rta_new_v2(task_idx, m):
-    alpha_sum = 0
-    beta_sum = 0
+    alpha_arr = []
+    beta_arr = []
 
     providers = []
     consumers = []
@@ -179,26 +179,25 @@ def rta_new_v2(task_idx, m):
 
     # --------------------------------------------------------------------------
     # III. calculate the finish times of each provider, and the consumers within
-    f_dict = {}
-    f_offest = 0
-    #R_m_minus_one = []
-    #R_minus_one = []
+    f_dict = {}        # the set of all finish times
+    I_dict = {}        # interference workload
+    R_i_minus_one = 0  # the response time of the previous provider theta^*_(i - 1)
 
     # iteratives all providers
     for i, theta_i_star in enumerate(providers):
         print("theta", i, ":", theta_i_star)
         print(consumers[i])  
 
-        # get the finish time of all provider nodes
+        # get the finish time of all provider nodes (in provider i)
         for provi_idx, provi_i in enumerate(theta_i_star):
             # (skipped) topoligical order, skipped because guaranteed by the generator
             if provi_idx == 0:
-                f_i = C_dict[provi_i] + f_offest
+                f_i = C_dict[provi_i] + R_i_minus_one
                 f_dict[provi_i] = f_i
-                f_theta_i_star = f_i
+                f_theta_i_star = f_i  # finish time. every loop refreshes this
             else:
                 previous_i = theta_i_star[provi_idx - 1]
-                f_i = C_dict[provi_i] + f_dict[previous_i] + f_offest
+                f_i = C_dict[provi_i] + f_dict[previous_i] + R_i_minus_one
                 f_dict[provi_i] = f_i
                 f_theta_i_star = f_i
         
@@ -252,39 +251,50 @@ def rta_new_v2(task_idx, m):
         # For Case B (has delay to the critical path):
         else:
             print("Case B")
-            # get len_lamda_ve
-            ve = f_v_i_max_idx
+
+            # search for lamda_ve
+            ve = f_v_i_max_idx  # end node & backward search
+            
+            lambda_ve = []
+            
+
+
+
+
             print(ve)
 
             len_lamda_ve = 0
             beta_i = min(R_i_m_minus_one - f_theta_i_star, len_lamda_ve)
 
-
-
-
-
+            # alpha by finish time
             alpha_i_hat = 0
-            alpha_i_new = 0
+            
+            # find the m - 1 longest path and their finish times
 
 
 
+            # calculate the finish time on m cores
 
 
 
+            # calculate f_delta = sum(f_ve - f_theta)
+
+            # approxiation of alpha
+            alpha_i_new = Wi - Li - f_delta
 
             alpha_i = max(alpha_i_hat, alpha_i_new)
         
         # calculate the response time based on alpha_i and beta_i
         Ri = Li + 1.0 / m * (Wi - Li - max(alpha_i - (m - 1) * beta_i, 0))
         print("Ri:", Ri)
-        f_offest = f_offest + Ri
+        R_i_minus_one = R_i_minus_one + Ri
 
-        alpha_sum = alpha_sum + alpha_i
-        beta_sum = beta_sum + beta_i
+        alpha_arr.append(alpha_i)
+        beta_arr.append(beta_i)
 
-    R = f_offest
+    R = R_i_minus_one
 
-    return R, alpha_sum, beta_sum
+    return R, alpha_arr, beta_arr
 
 
 if __name__ == "__main__":
