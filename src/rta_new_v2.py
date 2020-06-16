@@ -1,3 +1,4 @@
+import math
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -68,7 +69,7 @@ def load_task(task_idx):
 
 
 def rta_classic(task_idx, m):
-    G_dict, C_dict, lamda, VN_array, L, W = load_task(task_idx)
+    _, _, _, _, L, W = load_task(task_idx)
     makespan = L + 1 / m * (W - L)
     return makespan
 
@@ -93,16 +94,10 @@ def find_concurrent_nodes(G, node):
     return V
 
 
-def find_interference_nodes(G, node, candidate_list):
-    ''' find interfernce nodes from a candidate list
-    '''
-    pass
-
-
 def test_parallelism(G, node, n):
     ''' test if delta(node) < n
     '''
-    return True
+    return False
 
 
 def rta_new_v2(task_idx, m):
@@ -176,6 +171,7 @@ def rta_new_v2(task_idx, m):
 
     print("Providers:", providers)
     print("Consumers:", consumers)
+    print("- - - - - - - - - - - - - - - - - - - -")
 
     # --------------------------------------------------------------------------
     # III. calculate the finish times of each provider, and the consumers within
@@ -197,7 +193,7 @@ def rta_new_v2(task_idx, m):
                 f_theta_i_star = f_i  # finish time. every loop refreshes this
             else:
                 previous_i = theta_i_star[provi_idx - 1]
-                f_i = C_dict[provi_i] + f_dict[previous_i] + R_i_minus_one
+                f_i = C_dict[provi_i] + f_dict[previous_i]
                 f_dict[provi_i] = f_i
                 f_theta_i_star = f_i
         
@@ -205,15 +201,38 @@ def rta_new_v2(task_idx, m):
         # (skipped) topoligical order, skipped because guaranteed by the generator
         # note: consumer can be empty
         theta_i = consumers[i]
-        f_v_i_max = 0; f_v_i_max_idx = -1
+        f_v_j_max = 0; f_v_j_max_idx = -1
         for _, theta_ij in enumerate(theta_i):
             print(theta_ij, ":", C_dict[theta_ij])
             
             # the interference term
-            if test_parallelism(G_dict, theta_ij, m-1):
+            if test_parallelism(G_dict, theta_ij, m - 1):
+                # sufficient parallism
                 interference = 0
             else:
-                interference = 0
+                # not enough cores
+                # concurrent nodes of ij. Can be empty.
+                con_ij = find_concurrent_nodes(G_dict, theta_ij)
+                #print("Con nodes:", con_ij)
+
+                int_ij = con_ij.copy()
+                remove_nodes_in_list(int_ij, lamda)
+
+                ans_ij = find_ancestors(G_dict, theta_ij)
+                remove_nodes_in_list(ans_ij, lamda)
+                #print("Ans nodes:", ans_ij)
+
+                for ij in ans_ij:
+                    ans_int = I_dict[ij]
+                    for ijij in ans_int:
+                        if ijij in int_ij:
+                            int_ij.remove(ijij)
+                #print("Int nodes:", int_ij)
+
+                I_dict[theta_ij] = int_ij
+
+                int_c_sum = sum(C_dict[ij] for ij in con_ij)
+                interference = math.ceil(1.0 / (m-1) * int_c_sum)
 
             # find the max finish time of all its predecences
             f_ij_pre_max = 0
@@ -223,18 +242,16 @@ def rta_new_v2(task_idx, m):
                 if f_dict[pre_i] > f_ij_pre_max:
                     f_ij_pre_max = f_dict[pre_i]
 
-            # concurrent nodes of ij. Can be empty.
-            con_ij = find_concurrent_nodes(G_dict, theta_ij)  
-
             # calculate the finish time
-            f_ij = C_dict[theta_ij] + interference + f_ij_pre_max
+            f_ij = C_dict[theta_ij] + f_ij_pre_max + interference
             f_dict[theta_ij] = f_ij
 
-            if f_ij > f_v_i_max:
-                f_v_i_max = f_ij
-                f_v_i_max_idx = theta_ij
+            # find max(f_vj)
+            if f_ij > f_v_j_max:
+                f_v_j_max = f_ij
+                f_v_j_max_idx = theta_ij
         
-        R_i_m_minus_one = f_v_i_max
+        R_i_m_minus_one = f_v_j_max
 
         # start to calculate the response time of provider i
         Wi_nc = sum(C_dict[ij] for ij in theta_i)
@@ -245,31 +262,72 @@ def rta_new_v2(task_idx, m):
         # IV. bound alpha and beta
         # For Case A (has no delay to the critical path):
         if (R_i_m_minus_one <= f_theta_i_star):
+            print("** Case A **")
             alpha_i = Wi_nc
             beta_i = 0
 
         # For Case B (has delay to the critical path):
         else:
-            print("Case B")
+            print("** Case B **")
 
             # search for lamda_ve
-            ve = f_v_i_max_idx  # end node & backward search
-            
-            lambda_ve = []
-            
+            ve = f_v_j_max_idx  # end node & backward search
+            lamda_ve = [ve]
+            len_lamda_ve = C_dict[ve]
 
+            while True:
+                # find pre of ve
+                pre_of_ve = find_predecesor(G_dict, ve)  # pre_of_ve can be empty!
 
+                # only care about those within this provider
+                for ij in pre_of_ve.copy():
+                    if ij not in theta_i:
+                        pre_of_ve.remove(ij)
 
+                if pre_of_ve:
+                    # calculate the finish times, and the maximum
+                    f_pre_of_ve = []
+                    for ij in pre_of_ve:
+                        f_pre_of_ve.append(f_dict[ij])
 
-            print(ve)
+                    max_value = max(f_pre_of_ve)
+                    max_index = f_pre_of_ve.index(max_value)
 
-            len_lamda_ve = 0
+                    if max_value > f_theta_i_star:
+                        ve = pre_of_ve[max_index]
+                        lamda_ve.append(ve)
+                        len_lamda_ve = len_lamda_ve + C_dict[ve]
+                    else:
+                        break
+                else:
+                    break
+
+            print("Lamda Ve:", lamda_ve, "Len:", len_lamda_ve)
+
+            # beta_i
             beta_i = min(R_i_m_minus_one - f_theta_i_star, len_lamda_ve)
 
-            # alpha by finish time
-            alpha_i_hat = 0
+            # alpha (a): find alpha by estimation of finish times
+            alpha_hat_class_a = []
+            alpha_hat_class_b = []
+
+            for _, theta_ij in enumerate(theta_i):
+                if f_dict[theta_ij] <= f_theta_i_star:
+                    alpha_hat_class_a.append(theta_ij)
+                elif f_dict[theta_ij] < f_theta_i_star + C_dict[theta_ij]:
+                    alpha_hat_class_b.append(theta_ij)
+                else:
+                    pass
+
+            print("A:", alpha_hat_class_a, "B:", alpha_hat_class_b)
+
+            alpha_i_hat = sum(C_dict[ij] for ij in alpha_hat_class_a) + \
+                          sum(f_theta_i_star - (f_dict[ij] - C_dict[ij]) for ij in alpha_hat_class_b)
             
-            # find the m - 1 longest path and their finish times
+
+            # alpha case (b): find alpha by approximation
+
+            # find the m - 1 longest path and their finish times within the provider
 
 
 
@@ -278,16 +336,26 @@ def rta_new_v2(task_idx, m):
 
 
             # calculate f_delta = sum(f_ve - f_theta)
+            f_delta = 0
+
+
+
+
+
+
 
             # approxiation of alpha
             alpha_i_new = Wi - Li - f_delta
 
+            # alpha_i is the max of the two
             alpha_i = max(alpha_i_hat, alpha_i_new)
         
         # calculate the response time based on alpha_i and beta_i
-        Ri = Li + 1.0 / m * (Wi - Li - max(alpha_i - (m - 1) * beta_i, 0))
+        Ri = Li + math.ceil( 1.0 / m * (Wi - Li - max(alpha_i - (m-1) * beta_i, 0)) )
         print("Ri:", Ri)
+
         R_i_minus_one = R_i_minus_one + Ri
+        print("Ri-1: ", R_i_minus_one)
 
         alpha_arr.append(alpha_i)
         beta_arr.append(beta_i)
@@ -298,7 +366,7 @@ def rta_new_v2(task_idx, m):
 
 
 if __name__ == "__main__":
-    task_idx = 10; m = 4 # (4) (6 10)
+    task_idx = 9; m = 4 # (2, 4, 8, 16)
 
     R0 = rta_classic(task_idx, m)
     R, alpha, beta = rta_new_v2(task_idx, m)
