@@ -97,7 +97,47 @@ def find_concurrent_nodes(G, node):
 def test_parallelism(G, node, n):
     ''' test if delta(node) < n
     '''
-    return False
+
+    # start to iterative delta
+    delta = 0
+    node_left = node.copy()
+
+    while node_left:
+        # this search is limited to node, 
+        # so all keys and values that do not contain node_left will be removed
+        G_new = G.copy()
+
+        for key, value in G_new.copy().items():
+            if key not in node_left:
+                del G_new[key]
+            else:
+                value_new = value.copy()
+                for j in value:
+                    if j not in node_left:
+                        value_new.remove(j)
+                
+                G_new[key] = value_new
+        delta = delta + 1
+        if delta >= n:
+            #print("PARALLISM: False")
+            return False
+
+        finished = False
+        while not finished:
+            node_copy = node_left.copy()
+            for ve in node_copy:
+                if find_predecesor(G_new, ve) == []:
+                    node_left.remove(ve)
+                    finished = True
+
+        suc_ve = find_successor(G_new, ve)
+        while suc_ve:
+            suc_ve_first = suc_ve[0]
+            node_left.remove(suc_ve_first)
+            suc_ve = find_successor(G_new, ve)
+
+    #print("PARALLISM: True")
+    return True
 
 
 def rta_new_v2(task_idx, m):
@@ -181,8 +221,8 @@ def rta_new_v2(task_idx, m):
 
     # iteratives all providers
     for i, theta_i_star in enumerate(providers):
-        print("theta", i, ":", theta_i_star)
-        print(consumers[i])  
+        print("theta(*)", i, ":", theta_i_star)
+        print("theta", i, ":", consumers[i])  
 
         # get the finish time of all provider nodes (in provider i)
         for provi_idx, provi_i in enumerate(theta_i_star):
@@ -206,11 +246,15 @@ def rta_new_v2(task_idx, m):
             print(theta_ij, ":", C_dict[theta_ij])
             
             # the interference term
-            if test_parallelism(G_dict, theta_ij, m - 1):
+            con_nc_ij = find_concurrent_nodes(G_dict, theta_ij)
+            remove_nodes_in_list(con_nc_ij, lamda)
+            if test_parallelism(G_dict, con_nc_ij, m - 1):
                 # sufficient parallism
                 interference = 0
+                I_dict[theta_ij] = []
             else:
                 # not enough cores
+                # start to search interference nodes >>>
                 # concurrent nodes of ij. Can be empty.
                 con_ij = find_concurrent_nodes(G_dict, theta_ij)
                 #print("Con nodes:", con_ij)
@@ -230,8 +274,9 @@ def rta_new_v2(task_idx, m):
                 #print("Int nodes:", int_ij)
 
                 I_dict[theta_ij] = int_ij
+                # >>> end of searching interference nodes
 
-                int_c_sum = sum(C_dict[ij] for ij in con_ij)
+                int_c_sum = sum(C_dict[ij] for ij in int_ij)
                 interference = math.ceil(1.0 / (m-1) * int_c_sum)
 
             # find the max finish time of all its predecences
@@ -326,26 +371,142 @@ def rta_new_v2(task_idx, m):
             
 
             # alpha case (b): find alpha by approximation
+            theta_i_llen = theta_i.copy()
+            llen_i = {}
+            len_llen_i = {}
 
             # find the m - 1 longest path and their finish times within the provider
+            # n = 1, m - 1
+            for n in range(1, m):
+                # no more candidates, searching is finished
+                if theta_i_llen == []:
+                    llen_i[n] = []
+                    len_llen_i[n] = 0
+                    continue
 
+                f_theta_i_llen = []
 
+                for ij in theta_i_llen:
+                    f_theta_i_llen.append(f_dict[ij])
 
-            # calculate the finish time on m cores
+                max_value = max(f_theta_i_llen)
+                max_index = f_theta_i_llen.index(max_value)
+                ve = theta_i_llen[max_index]
 
+                # find the path (backward search)
+                llen_ij = [ve]
+                len_llen_ij = C_dict[ve]
 
+                while(True):
+                    pre_of_ij = find_predecesor(G_dict, ve)
+                    for ij in pre_of_ij:
+                        if ij not in theta_i:
+                            pre_of_ij.remove(ij)
 
-            # calculate f_delta = sum(f_ve - f_theta)
-            f_delta = 0
+                    if pre_of_ij:
+                        # find the maximum finish time, within the provider
+                        f_pre_of_ij = []
+                        for ij in pre_of_ij:
+                            f_pre_of_ij.append(f_dict[ij])
 
+                        max_value = max(f_pre_of_ij)
+                        max_index = f_pre_of_ij.index(max_value)
 
+                        if max_value > f_theta_i_star:
+                            ve = pre_of_ij[max_index]
+                            llen_ij.append(ve)
+                            len_llen_ij = len_llen_ij + C_dict[ve]
+                        else:
+                            break
+                    else:
+                        break
 
+                # remove the nodes in the path from theta_i_llen
+                for ij in llen_ij:
+                    if ij in theta_i_llen:
+                        theta_i_llen.remove(ij)
+                
+                # save the llen_ij
+                llen_i[n] = llen_ij
+                len_llen_i[n] = len_llen_ij
 
+            # update the finish time of nodes in len_i
+            U_llen = []
+            for key in llen_i:
+                if llen_i[key]:
+                    # topological sort, to ensure finish time is calculated in the right order
+                    llen_i[key].sort()
 
+                    # update the UNION(llen(k))
+                    for theta_ij in llen_i[key]:
+                        U_llen.append(theta_ij)
 
+                    # iterative all nodes in the (key)th longest path
+                    for theta_ij in llen_i[key]:
+                        # the interference term
+                        con_nc_ij = find_concurrent_nodes(G_dict, theta_ij)
+                        remove_nodes_in_list(con_nc_ij, lamda)
+                        if test_parallelism(G_dict, con_nc_ij, m - 1):
+                            # sufficient parallism
+                            interference = 0
+                        else:
+                            # not enough cores
+                            # start to search interference nodes >>>
+                            # concurrent nodes of ij. Can be empty.
+                            con_ij = find_concurrent_nodes(G_dict, theta_ij)
+                            #print("Con nodes:", con_ij)
+
+                            int_ij = con_ij.copy()
+                            remove_nodes_in_list(int_ij, lamda)
+
+                            ans_ij = find_ancestors(G_dict, theta_ij)
+                            remove_nodes_in_list(ans_ij, lamda)
+                            #print("Ans nodes:", ans_ij)
+
+                            for ij in ans_ij:
+                                ans_int = I_dict[ij]
+                                for ijij in ans_int:
+                                    if ijij in int_ij:
+                                        int_ij.remove(ijij)
+                            #print("Int nodes:", int_ij)
+
+                            I_dict[theta_ij] = int_ij
+                            # >>> end of searching interference nodes
+
+                            # one more step: remove all Union(llen(k))
+                            for ij in U_llen:
+                                if ij in int_ij:
+                                    int_ij.remove(ij)
+
+                            int_c_sum = sum(C_dict[ij] for ij in int_ij)
+                            interference = math.ceil(1.0 / (m-1) * int_c_sum)
+
+                        # find the max finish time of all its predecences
+                        f_ij_pre_max = 0
+
+                        predecsor_of_ij = find_predecesor(G_dict, theta_ij)
+                        for pre_i in predecsor_of_ij:
+                            if f_dict[pre_i] > f_ij_pre_max:
+                                f_ij_pre_max = f_dict[pre_i]
+
+                        # calculate the finish time
+                        f_ij = C_dict[theta_ij] + f_ij_pre_max + interference
+
+                        print("Finish time of {:} updated from {:} to {:}".format(theta_ij, f_dict[theta_ij], f_ij))
+                        f_dict[theta_ij] = f_ij
+
+            # calculate f_delta = sum[(f_ve - f_theta_i_star)]0
+            f_delta_sum = 0
+            for iii_f in range(1, m):
+                if llen_i[iii_f]:
+                    llen_i_ve = llen_i[iii_f][-1]
+                    f_delta = max(f_dict[llen_i_ve] - f_theta_i_star, 0)
+                    f_delta_sum = f_delta_sum + f_delta
+                else:
+                    pass
 
             # approxiation of alpha
-            alpha_i_new = Wi - Li - f_delta
+            alpha_i_new = Wi - Li - f_delta_sum
 
             # alpha_i is the max of the two
             alpha_i = max(alpha_i_hat, alpha_i_new)
@@ -366,9 +527,10 @@ def rta_new_v2(task_idx, m):
 
 
 if __name__ == "__main__":
-    task_idx = 9; m = 4 # (2, 4, 8, 16)
+    task_idx = 18; m = 4 # (2, 4, 8, 16)
 
     R0 = rta_classic(task_idx, m)
     R, alpha, beta = rta_new_v2(task_idx, m)
     print("R0 = {}".format(R0))
     print("R1 = {}, alpha = {}, beta = {}".format(R, alpha, beta))
+    print("{:.1f} % improvement".format((R0 - R) / float(R0) * 100.0))
