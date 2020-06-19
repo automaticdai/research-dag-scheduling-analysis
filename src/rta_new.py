@@ -412,8 +412,4 @@ def rta_new(task_idx, m):
         # calculate the response time bound
         rt_new = Li_p + (1.0 / m) * (Wi_p - Li_p - alpha_i - beta_i) + beta_i
 
-
-    rt_baseline = rta_np(task_idx,m)
-    #print(rta_baseline)
-
     return rt_new

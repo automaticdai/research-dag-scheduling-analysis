@@ -62,7 +62,7 @@ def load_task(task_idx):
     return G_dict, C_dict, lamda, VN_array, L, W
 
 
-def rta_classic(task_idx, m):
+def rta_np_classic(task_idx, m):
     _, _, _, _, L, W = load_task(task_idx)
     makespan = L + 1 / m * (W - L)
     return makespan
@@ -636,13 +636,24 @@ def EOPA(task_idx):
     return Prio
 
 
+def rta_new_v2_for_multi():
+    """ rta for multi-DAGs
+    """
+    pass
+
+
+def TPDS_analysis(task_idx, m):
+    pass
+
+
 if __name__ == "__main__":
-    task_idx = 1; m = 4 # (2, 4, 8, 16)
+    task_idx = 14; m = 4 # (2, 4, 8, 16)
 
-    # R0 = rta_classic(task_idx, m)
-    # R, alpha, beta = rta_new_v2(task_idx, m)
-    # print("R0 = {}".format(R0))
-    # print("R1 = {}, alpha = {}, beta = {}".format(R, alpha, beta))
-    # print("{:.1f} % improvement".format((R0 - R) / float(R0) * 100.0))
+    R0 = rta_np_classic(task_idx, m)
+    R, alpha, beta = rta_new_v2(task_idx, m)
+    print("R0 = {}".format(R0))
+    print("R1 = {}, alpha = {}, beta = {}".format(R, alpha, beta))
+    print("{:.1f} % improvement".format((R0 - R) / float(R0) * 100.0))
 
-    EOPA(task_idx)
+    # EOPA(task_idx)
+    # TPDS_analysis(task_idx, m)
