@@ -4,18 +4,12 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib import rc
 import pickle
+from operator import itemgetter
 
 import networkx as nx
 
 from graph import find_longest_path_dfs, find_predecesor, find_successor, find_ancestors, find_descendants, get_subpath_between
 from rta_np import rta_np
-
-
-def EO():
-    """ The Eligibility Ordering
-    """
-    eo_ordering = {}
-    return eo_ordering
 
 
 def load_task(task_idx):
@@ -140,21 +134,12 @@ def test_parallelism(G, node, n):
     return True
 
 
-def rta_new_v2(task_idx, m):
-    alpha_arr = []
-    beta_arr = []
-
+def find_providers_consumers(G_dict, lamda, VN_array):
+    """ Find providers and consumers
+    """
     providers = []
     consumers = []
 
-    # --------------------------------------------------------------------------
-    # I. load the DAG task
-    G_dict, C_dict, lamda, VN_array, L, W = load_task(task_idx)
-
-    # --------------------------------------------------------------------------
-    # II. providers and consumers
-    # iterative all critical nodes
-    # after this, all provides and consumers will be collected
     new_provider = []
     nc_nodes_left = VN_array.copy()
     for key, i in enumerate(lamda):
@@ -209,6 +194,21 @@ def rta_new_v2(task_idx, m):
             nc_nodes_left.sort()
             consumers.append(nc_nodes_left)
 
+    return providers, consumers
+
+
+def rta_new_v2(task_idx, m):
+    """ Response time analysis using alpha_beta
+    """
+    # --------------------------------------------------------------------------
+    # I. load the DAG task
+    G_dict, C_dict, lamda, VN_array, L, W = load_task(task_idx)
+
+    # --------------------------------------------------------------------------
+    # II. providers and consumers
+    # iterative all critical nodes
+    # after this, all provides and consumers will be collected
+    providers, consumers = find_providers_consumers(G_dict, lamda, VN_array)
     print("Providers:", providers)
     print("Consumers:", consumers)
     print("- - - - - - - - - - - - - - - - - - - -")
@@ -218,6 +218,9 @@ def rta_new_v2(task_idx, m):
     f_dict = {}        # the set of all finish times
     I_dict = {}        # interference workload
     R_i_minus_one = 0  # the response time of the previous provider theta^*_(i - 1)
+
+    alpha_arr = []
+    beta_arr = []
 
     # iteratives all providers
     for i, theta_i_star in enumerate(providers):
@@ -526,11 +529,120 @@ def rta_new_v2(task_idx, m):
     return R, alpha_arr, beta_arr
 
 
-if __name__ == "__main__":
-    task_idx = 18; m = 4 # (2, 4, 8, 16)
+def EOPA(task_idx):
+    """ The Eligibility Ordering priority assignment
+    """
+    Prio = {}
+    E_MAX = 2000
 
-    R0 = rta_classic(task_idx, m)
-    R, alpha, beta = rta_new_v2(task_idx, m)
-    print("R0 = {}".format(R0))
-    print("R1 = {}, alpha = {}, beta = {}".format(R, alpha, beta))
-    print("{:.1f} % improvement".format((R0 - R) / float(R0) * 100.0))
+    # --------------------------------------------------------------------------
+    # I. load the DAG task
+    G_dict, C_dict, lamda, VN_array, _, _ = load_task(task_idx)
+
+    # --------------------------------------------------------------------------
+    # II. providers and consumers
+    # iterative all critical nodes
+    # after this, all provides and consumers will be collected
+    providers, consumers = find_providers_consumers(G_dict, lamda, VN_array)
+    print("Providers:", providers)
+    print("Consumers:", consumers)
+    print("- - - - - - - - - - - - - - - - - - - -")
+
+    # --------------------------------------------------------------------------
+    # III. start eligibility ordering
+    iter_idx = 0
+    E_next = E_MAX - 1
+    for theta_star_i in providers:
+        for i in theta_star_i:
+            Prio[i] = E_MAX
+
+        # within each consumers, sort the order by the longest path that pass over theta_ij
+        theta_i = consumers[iter_idx]
+        l_i_arr = []
+        
+        # build up a new (temporal) DAG with only the consumers
+        G_new = G_dict.copy()
+
+        for key, value in G_new.copy().items():
+            if key not in theta_i:
+                del G_new[key]
+            else:
+                value_new = value.copy()
+                for j in value:
+                    if j not in theta_i:
+                        value_new.remove(j)
+                G_new[key] = value_new
+        
+        for theta_ij in theta_i:
+            # 1. calculate the length
+            C_i = C_dict[theta_ij]
+
+            # forward searching in G_new
+            lf_i = C_i
+
+            pre_ij = find_predecesor(G_new, theta_ij)
+
+            while pre_ij:
+                max_c = 0
+                max_v = -1
+                for idx in pre_ij:
+                    if C_dict[idx] > max_c:
+                        max_c = C_dict[idx]
+                        max_v = idx
+                
+                lf_i = lf_i + max_c
+                ve = max_v
+                pre_ij = find_predecesor(G_new, ve)
+
+            # backward searching in G_new
+            lb_i = C_i
+
+            suc_ij = find_successor(G_new, theta_ij)
+
+            while suc_ij:
+                max_c = 0
+                max_v = -1
+                for idx in suc_ij:
+                    if C_dict[idx] > max_c:
+                        max_c = C_dict[idx]
+                        max_v = idx
+                
+                lb_i = lb_i + max_c
+                ve = max_v
+                suc_ij = find_successor(G_new, ve)
+
+            # calculate l
+            l_i = lf_i + lb_i - C_i
+            l_i_arr.append(l_i)
+
+        # 2. sort theta_i according to l(i)
+        if l_i_arr:
+            L = l_i_arr
+            indices, L_sorted = zip(*sorted(enumerate(L), key=itemgetter(1)))
+            theta_i_sorted = []
+            for idx_ in range(len(L)):
+                for v_idx, v_order in enumerate(indices):
+                    if v_order == idx_:
+                        theta_i_sorted.append(theta_i[v_idx])
+
+            # 3. assign priorities according to l(i)
+            for j in theta_i_sorted:
+                Prio[j] = E_next
+                E_next = E_next - 1
+
+        E_next = E_next - 100
+        iter_idx = iter_idx + 1
+
+    return Prio
+
+
+if __name__ == "__main__":
+    task_idx = 1; m = 4 # (2, 4, 8, 16)
+
+    # R0 = rta_classic(task_idx, m)
+    # R, alpha, beta = rta_new_v2(task_idx, m)
+    # print("R0 = {}".format(R0))
+    # print("R1 = {}, alpha = {}, beta = {}".format(R, alpha, beta))
+    # print("{:.1f} % improvement".format((R0 - R) / float(R0) * 100.0))
+
+    EOPA(task_idx)
