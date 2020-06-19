@@ -9,7 +9,6 @@ from operator import itemgetter
 import networkx as nx
 
 from graph import find_longest_path_dfs, find_predecesor, find_successor, find_ancestors, find_descendants, get_subpath_between
-from rta_np import rta_np
 
 
 def load_task(task_idx):
@@ -60,12 +59,6 @@ def load_task(task_idx):
 
     # >> end of load DAG task >>
     return G_dict, C_dict, lamda, VN_array, L, W
-
-
-def rta_np_classic(task_idx, m):
-    _, _, _, _, L, W = load_task(task_idx)
-    makespan = L + 1 / m * (W - L)
-    return makespan
 
 
 def remove_nodes_in_list(nodes, nodes_to_remove):
@@ -197,7 +190,7 @@ def find_providers_consumers(G_dict, lamda, VN_array):
     return providers, consumers
 
 
-def rta_new_v2(task_idx, m):
+def rta_alphabeta_new(task_idx, m, EOPA=False):
     """ Response time analysis using alpha_beta
     """
     # --------------------------------------------------------------------------
@@ -636,13 +629,19 @@ def EOPA(task_idx):
     return Prio
 
 
-def rta_new_v2_for_multi():
+def rta_alphabeta_new_multi():
     """ rta for multi-DAGs
     """
     pass
 
 
-def TPDS_analysis(task_idx, m):
+def rta_np_classic(task_idx, m):
+    _, _, _, _, L, W = load_task(task_idx)
+    makespan = L + 1 / m * (W - L)
+    return makespan
+
+
+def rta_TPDS(task_idx, m):
     pass
 
 
@@ -650,10 +649,11 @@ if __name__ == "__main__":
     task_idx = 14; m = 4 # (2, 4, 8, 16)
 
     R0 = rta_np_classic(task_idx, m)
-    R, alpha, beta = rta_new_v2(task_idx, m)
+    R, alpha, beta = rta_alphabeta_new(task_idx, m, EOPA=False)
+    #R, alpha, beta = rta_alphabeta_new(task_idx, m, EOPA=True)
     print("R0 = {}".format(R0))
     print("R1 = {}, alpha = {}, beta = {}".format(R, alpha, beta))
     print("{:.1f} % improvement".format((R0 - R) / float(R0) * 100.0))
 
     # EOPA(task_idx)
-    # TPDS_analysis(task_idx, m)
+    # rta_TPDS(task_idx, m)

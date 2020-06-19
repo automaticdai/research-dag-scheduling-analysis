@@ -6,8 +6,8 @@
 
 Simulate DAG tasksets execution on multi-cores. This package supports:
 
-- plug-in schedulers
-- analysis
+- plug-in scheduling policies
+- plug-in response time analysis (RTA)
 - trace execution logs
 - use with rnd-dag-gen task generator
 - configurable scheduling and task parameters
@@ -15,10 +15,16 @@ Simulate DAG tasksets execution on multi-cores. This package supports:
 
 Supported scheduling alogrithms:
 
-- Non-preemptive random
+- Non-preemptive with random ordering
 - Non-preemptive with eligibility ordering
 - (Todo) Preemptive Fixed-priority Scheduling 
 - (Todo) Preemptive workload distribution model
+
+Support response time analysis:
+
+- classical 1/m bound
+- (alpha, beta) analysis
+- (alpha, beta) analysis with eligibility ordering
 
 
 Suppored execution models:
