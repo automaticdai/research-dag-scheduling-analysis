@@ -204,7 +204,6 @@ def rta_alphabeta_new(task_idx, m, EOPA=False):
     providers, consumers = find_providers_consumers(G_dict, lamda, VN_array)
     print("Providers:", providers)
     print("Consumers:", consumers)
-    print("- - - - - - - - - - - - - - - - - - - -")
 
     # --------------------------------------------------------------------------
     # III. calculate the finish times of each provider, and the consumers within
@@ -217,21 +216,25 @@ def rta_alphabeta_new(task_idx, m, EOPA=False):
 
     # iteratives all providers
     for i, theta_i_star in enumerate(providers):
+        print("- - - - - - - - - - - - - - - - - - - -")
         print("theta(*)", i, ":", theta_i_star)
         print("theta", i, ":", consumers[i])  
 
         # get the finish time of all provider nodes (in provider i)
-        for provi_idx, provi_i in enumerate(theta_i_star):
-            # (skipped) topoligical order, skipped because guaranteed by the generator
-            if provi_idx == 0:
-                f_i = C_dict[provi_i] + R_i_minus_one
-                f_dict[provi_i] = f_i
-                f_theta_i_star = f_i  # finish time. every loop refreshes this
-            else:
-                previous_i = theta_i_star[provi_idx - 1]
-                f_i = C_dict[provi_i] + f_dict[previous_i]
-                f_dict[provi_i] = f_i
-                f_theta_i_star = f_i
+        for _, provi_i in enumerate(theta_i_star):
+            # (skipped) sort with topoligical order, skipped because guaranteed by the generator
+            # find the max finish time of all its predecences
+            f_provider_i_pre_max = 0
+
+            predecsor_of_ij = find_predecesor(G_dict, provi_i)
+            for pre_i in predecsor_of_ij:
+                if f_dict[pre_i] > f_provider_i_pre_max:
+                    f_provider_i_pre_max = f_dict[pre_i]
+
+            f_i = C_dict[provi_i] + f_provider_i_pre_max
+
+            f_dict[provi_i] = f_i
+            f_theta_i_star = f_i # finish time of theta_i_star. every loop refreshes this
         
         # iteratives all consumers
         # (skipped) topoligical order, skipped because guaranteed by the generator
@@ -292,7 +295,8 @@ def rta_alphabeta_new(task_idx, m, EOPA=False):
                 f_v_j_max = f_ij
                 f_v_j_max_idx = theta_ij
         
-        R_i_m_minus_one = f_v_j_max
+        # (!) R_i_m_minus_one is no longer needed
+        #R_i_m_minus_one = f_v_j_max
 
         # start to calculate the response time of provider i
         Wi_nc = sum(C_dict[ij] for ij in theta_i)
@@ -302,15 +306,13 @@ def rta_alphabeta_new(task_idx, m, EOPA=False):
         # --------------------------------------------------------------------------
         # IV. bound alpha and beta
         # For Case A (has no delay to the critical path):
-        if (R_i_m_minus_one <= f_theta_i_star):
+        if (f_theta_i_star >= f_v_j_max):
             print("** Case A **")
             alpha_i = Wi_nc
             beta_i = 0
-
         # For Case B (has delay to the critical path):
         else:
             print("** Case B **")
-
             # search for lamda_ve
             ve = f_v_j_max_idx  # end node & backward search
             lamda_ve = [ve]
@@ -337,16 +339,27 @@ def rta_alphabeta_new(task_idx, m, EOPA=False):
                     if max_value > f_theta_i_star:
                         ve = pre_of_ve[max_index]
                         lamda_ve.append(ve)
-                        len_lamda_ve = len_lamda_ve + C_dict[ve]
                     else:
                         break
                 else:
                     break
 
-            print("Lamda Ve:", lamda_ve, "Len:", len_lamda_ve)
+            
+            for ve_i in lamda_ve:
+                if f_dict[ve_i] - C_dict[ve_i] >= f_theta_i_star:
+                    len_lamda_ve = len_lamda_ve + C_dict[ve_i]
+                else:
+                    # overlapped consumer; starts before 
+                    len_lamda_ve = len_lamda_ve + max((f_dict[ve_i] - f_theta_i_star), 0)
+            
+            print("lamda_ve:", lamda_ve, "len:", len_lamda_ve)
 
             # beta_i
-            beta_i = min(R_i_m_minus_one - f_theta_i_star, len_lamda_ve)
+            # (i) if head of lamda_ve executes before start of theta_i_star, remove these amounts
+            #len_lamda_ve - (s_theta_i_head - s_theta_i_star)
+            
+            # (ii) otherwise this is the len_lamda_ve
+            beta_i = len_lamda_ve
 
             # alpha (a): find alpha by estimation of finish times
             alpha_hat_class_a = []
@@ -363,7 +376,7 @@ def rta_alphabeta_new(task_idx, m, EOPA=False):
             print("A:", alpha_hat_class_a, "B:", alpha_hat_class_b)
 
             alpha_i_hat = sum(C_dict[ij] for ij in alpha_hat_class_a) + \
-                          sum(f_theta_i_star - (f_dict[ij] - C_dict[ij]) for ij in alpha_hat_class_b)
+                            sum(f_theta_i_star - (f_dict[ij] - C_dict[ij]) for ij in alpha_hat_class_b)
             
 
             # alpha case (b): find alpha by approximation
@@ -502,17 +515,19 @@ def rta_alphabeta_new(task_idx, m, EOPA=False):
                     pass
 
             # approxiation of alpha
-            alpha_i_new = Wi - Li - f_delta_sum
+            # (!) note: alpha_i_new is removed as it is unsafe
+            #alpha_i_new = Wi - Li - f_delta_sum
+            alpha_i_new = 0
 
             # alpha_i is the max of the two
             alpha_i = max(alpha_i_hat, alpha_i_new)
         
         # calculate the response time based on alpha_i and beta_i
         Ri = Li + math.ceil( 1.0 / m * (Wi - Li - max(alpha_i - (m-1) * beta_i, 0)) )
-        print("Ri:", Ri)
+        print("R_i:", Ri)
 
         R_i_minus_one = R_i_minus_one + Ri
-        print("Ri-1: ", R_i_minus_one)
+        print("R_updated: ", R_i_minus_one)
 
         alpha_arr.append(alpha_i)
         beta_arr.append(beta_i)
@@ -636,12 +651,35 @@ def rta_alphabeta_new_multi():
 
 
 def rta_np_classic(task_idx, m):
+    """ The classical bound
+    """
     _, _, _, _, L, W = load_task(task_idx)
-    makespan = L + 1 / m * (W - L)
+    makespan = math.ceil( L + 1 / m * (W - L) )
     return makespan
 
 
 def rta_TPDS(task_idx, m):
+    """ Response time analysis in: 
+    Qingqiang He, et. al, Intra-Task Priority Assignment in Real-Time Scheduling of DAG Tasks on Multi-cores, 2019
+    """
+    # --------------------------------------------------------------------------
+    # I. load the DAG task
+    G_dict, C_dict, lamda, VN_array, L, W = load_task(task_idx)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+def rta_TPDS_multi():
     pass
 
 
@@ -651,6 +689,7 @@ if __name__ == "__main__":
     R0 = rta_np_classic(task_idx, m)
     R, alpha, beta = rta_alphabeta_new(task_idx, m, EOPA=False)
     #R, alpha, beta = rta_alphabeta_new(task_idx, m, EOPA=True)
+    print("- - - - - - - - - - - - - - - - - - - -")
     print("R0 = {}".format(R0))
     print("R1 = {}, alpha = {}, beta = {}".format(R, alpha, beta))
     print("{:.1f} % improvement".format((R0 - R) / float(R0) * 100.0))

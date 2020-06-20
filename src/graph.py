@@ -7,7 +7,7 @@
 # University of York, UK
 
 # Note:
-# This library is indepdent of the NetworkX library.
+# This library is indepdent of other graph programming libraries, e.g., NetworkX.
 
 def find_all_paths(G_, start_vertex, end_vertex, path=[]):
     """ find all paths from start_vertex to end_vertex in graph """
@@ -32,7 +32,6 @@ def find_all_paths(G_, start_vertex, end_vertex, path=[]):
                 paths.append(p)
     
     return paths
-
 
 
 def get_subpath_between(P, a, b):
