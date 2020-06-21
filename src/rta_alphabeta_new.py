@@ -214,7 +214,11 @@ def rta_alphabeta_new(task_idx, m, EOPA=False):
     alpha_arr = []
     beta_arr = []
 
-    # iteratives all providers
+    if EOPA:
+        Prio_EO = Eligiblity_Ordering(task_idx)
+
+    # ==========================================================================
+    # iteratives all providers (first time, to get all finish times)
     for i, theta_i_star in enumerate(providers):
         print("- - - - - - - - - - - - - - - - - - - -")
         print("theta(*)", i, ":", theta_i_star)
@@ -271,7 +275,113 @@ def rta_alphabeta_new(task_idx, m, EOPA=False):
                         if ijij in int_ij:
                             int_ij.remove(ijij)
                 #print("Int nodes:", int_ij)
+                
+                if EOPA:
+                    # for EOPA, only the longest lower priority interference node is kept
+                    int_ij_EO = []
+                    int_c_max = -1
+                    int_ij_k_with_c_max = -1
 
+                    for int_ij_k in int_ij:
+                        if Prio_EO[int_ij_k] > Prio_EO[theta_ij]:
+                            # E_k > E_i
+                            int_ij_EO.append(int_ij_k)
+                        else:
+                            # E_k < E_i
+                            if C_dict[int_ij_k] > int_c_max:
+                                int_c_max = C_dict[int_ij_k]
+                                int_ij_k_with_c_max = int_ij_k
+
+                    if int_ij_k_with_c_max != -1:
+                        int_ij_EO.append(int_ij_k_with_c_max)
+
+                    int_ij = int_ij_EO.copy()
+                
+                I_dict[theta_ij] = int_ij
+                # >>> end of searching interference nodes
+
+                int_c_sum = sum(C_dict[ij] for ij in int_ij)
+                interference = math.ceil(1.0 / (m-1) * int_c_sum)
+
+            # find the max finish time of all its predecences
+            f_ij_pre_max = 0
+
+            predecsor_of_ij = find_predecesor(G_dict, theta_ij)
+            for pre_i in predecsor_of_ij:
+                if f_dict[pre_i] > f_ij_pre_max:
+                    f_ij_pre_max = f_dict[pre_i]
+
+            # calculate the finish time
+            f_ij = C_dict[theta_ij] + f_ij_pre_max + interference
+            f_dict[theta_ij] = f_ij
+
+
+    # ==========================================================================
+    # iteratives all providers (2nd time)
+    # the finish times of consumer nodes have to be calculated again to get lambda_ve
+    # 
+    for i, theta_i_star in enumerate(providers):
+        print("- - - - - - - - - - - - - - - - - - - -")
+        print("theta(*)", i, ":", theta_i_star)
+        print("theta", i, ":", consumers[i])  
+
+        # iteratives all consumers
+        # (skipped) topoligical order, skipped because guaranteed by the generator
+        # note: consumer can be empty
+        theta_i = consumers[i]
+        f_v_j_max = 0; f_v_j_max_idx = -1
+        for _, theta_ij in enumerate(theta_i):
+            print(theta_ij, ":", C_dict[theta_ij])
+            
+            # the interference term
+            con_nc_ij = find_concurrent_nodes(G_dict, theta_ij)
+            remove_nodes_in_list(con_nc_ij, lamda)
+            if test_parallelism(G_dict, con_nc_ij, m - 1):
+                # sufficient parallism
+                interference = 0
+                I_dict[theta_ij] = []
+            else:
+                # not enough cores
+                # start to search interference nodes >>>
+                # concurrent nodes of ij. Can be empty.
+                con_ij = find_concurrent_nodes(G_dict, theta_ij)
+                #print("Con nodes:", con_ij)
+
+                int_ij = con_ij.copy()
+                remove_nodes_in_list(int_ij, lamda)
+
+                ans_ij = find_ancestors(G_dict, theta_ij)
+                remove_nodes_in_list(ans_ij, lamda)
+                #print("Ans nodes:", ans_ij)
+
+                for ij in ans_ij:
+                    ans_int = I_dict[ij]
+                    for ijij in ans_int:
+                        if ijij in int_ij:
+                            int_ij.remove(ijij)
+                #print("Int nodes:", int_ij)
+                
+                if EOPA:
+                    # for EOPA, only the longest lower priority interference node is kept
+                    int_ij_EO = []
+                    int_c_max = -1
+                    int_ij_k_with_c_max = -1
+
+                    for int_ij_k in int_ij:
+                        if Prio_EO[int_ij_k] > Prio_EO[theta_ij]:
+                            # E_k > E_i
+                            int_ij_EO.append(int_ij_k)
+                        else:
+                            # E_k < E_i
+                            if C_dict[int_ij_k] > int_c_max:
+                                int_c_max = C_dict[int_ij_k]
+                                int_ij_k_with_c_max = int_ij_k
+
+                    if int_ij_k_with_c_max != -1:
+                        int_ij_EO.append(int_ij_k_with_c_max)
+
+                    int_ij = int_ij_EO.copy()
+                
                 I_dict[theta_ij] = int_ij
                 # >>> end of searching interference nodes
 
@@ -344,21 +454,16 @@ def rta_alphabeta_new(task_idx, m, EOPA=False):
                 else:
                     break
 
-            
+            # calculate accmulative intererence
             for ve_i in lamda_ve:
                 if f_dict[ve_i] - C_dict[ve_i] >= f_theta_i_star:
                     len_lamda_ve = len_lamda_ve + C_dict[ve_i]
                 else:
-                    # overlapped consumer; starts before 
                     len_lamda_ve = len_lamda_ve + max((f_dict[ve_i] - f_theta_i_star), 0)
             
             print("lamda_ve:", lamda_ve, "len:", len_lamda_ve)
 
             # beta_i
-            # (i) if head of lamda_ve executes before start of theta_i_star, remove these amounts
-            #len_lamda_ve - (s_theta_i_head - s_theta_i_star)
-            
-            # (ii) otherwise this is the len_lamda_ve
             beta_i = len_lamda_ve
 
             # alpha (a): find alpha by estimation of finish times
@@ -522,8 +627,43 @@ def rta_alphabeta_new(task_idx, m, EOPA=False):
             # alpha_i is the max of the two
             alpha_i = max(alpha_i_hat, alpha_i_new)
         
-        # calculate the response time based on alpha_i and beta_i
-        Ri = Li + math.ceil( 1.0 / m * (Wi - Li - max(alpha_i - (m-1) * beta_i, 0)) )
+        if not EOPA:
+            # RTA-CFP
+            # calculate the response time based on alpha_i and beta_i
+            Ri = Li + math.ceil( 1.0 / m * (Wi - Li - max(alpha_i - (m-1) * beta_i, 0)) )
+        else:
+            # RTA-CFP + EOPA
+            if beta_i == 0:
+                Ri = Li
+            else:
+                I_lambda_ve = []
+
+                # get I_lambda_ve
+                for v_kk in lamda_ve:
+                    v_jj = I_dict[v_kk]
+
+                    for v_jjj in v_jj:
+                        if f_dict[v_jjj] > f_theta_i_star:
+                            I_lambda_ve.append(v_jjj)
+
+                # test parallelism of I_lambda_ve
+                if test_parallelism(G_dict, I_lambda_ve, m):
+                    I_term_for_EO = 0
+                else:
+                    # calculate I_ve
+                    I_ve = 0
+
+                    for v_kk in I_lambda_ve:
+                        if f_dict[v_kk] - C_dict[v_kk] >= f_theta_i_star:
+                            I_ve = I_ve + C_dict[v_kk]
+                        else:
+                            I_ve = I_ve + (f_dict[v_kk] - f_theta_i_star)
+
+                    I_term_for_EO = math.ceil(1.0 / m * I_ve)
+
+
+                Ri = Li + beta_i + I_term_for_EO
+
         print("R_i:", Ri)
 
         R_i_minus_one = R_i_minus_one + Ri
@@ -537,7 +677,7 @@ def rta_alphabeta_new(task_idx, m, EOPA=False):
     return R, alpha_arr, beta_arr
 
 
-def EOPA(task_idx):
+def Eligiblity_Ordering(task_idx):
     """ The Eligibility Ordering priority assignment
     """
     Prio = {}
@@ -667,27 +807,15 @@ def rta_TPDS(task_idx, m):
     G_dict, C_dict, lamda, VN_array, L, W = load_task(task_idx)
 
 
-
-
-
-
-
-
-
-
-
-
-
-
 def rta_TPDS_multi():
     pass
 
 
 if __name__ == "__main__":
-    task_idx = 14; m = 4 # (2, 4, 8, 16)
+    task_idx = 19; m = 2 # (2, 4, 8, 16)
 
     R0 = rta_np_classic(task_idx, m)
-    R, alpha, beta = rta_alphabeta_new(task_idx, m, EOPA=False)
+    R, alpha, beta = rta_alphabeta_new(task_idx, m, EOPA=True)
     #R, alpha, beta = rta_alphabeta_new(task_idx, m, EOPA=True)
     print("- - - - - - - - - - - - - - - - - - - -")
     print("R0 = {}".format(R0))
