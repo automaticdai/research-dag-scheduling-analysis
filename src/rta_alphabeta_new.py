@@ -438,7 +438,7 @@ def rta_alphabeta_new(task_idx, m, EOPA=False):
             # search for lamda_ve
             ve = f_v_j_max_idx  # end node & backward search
             lamda_ve = [ve]
-            len_lamda_ve = C_dict[ve]
+            len_lamda_ve = 0
 
             while True:
                 # find pre of ve
@@ -861,10 +861,10 @@ def rta_TPDS_multi():
 
 
 if __name__ == "__main__":
-    task_idx = 19; m = 2 # (2, 4, 8, 16)
+    task_idx = 0; m = 4 # (2, 4, 8, 16)
 
     R0 = rta_np_classic(task_idx, m)
-    R, alpha, beta = rta_alphabeta_new(task_idx, m, EOPA=False)
+    R, alpha, beta = rta_alphabeta_new(task_idx, m, EOPA=True)
     print("- - - - - - - - - - - - - - - - - - - -")
     print("R0 = {}".format(R0))
     print("R1 = {}, alpha = {}, beta = {}".format(R, alpha, beta))
