@@ -362,25 +362,37 @@ def rta_alphabeta_new(task_idx, m, EOPA=False):
                 #print("Int nodes:", int_ij)
                 
                 if EOPA:
-                    # for EOPA, only the longest lower priority interference node is kept
+                    # for EOPA, only the (m - 1) longest lower priority interference node is kept
                     int_ij_EO = []
-                    int_c_max = -1
-                    int_ij_k_with_c_max = -1
+                    int_ij_EO_less_candidates = []
+                    int_ij_EO_less_candidates_C = []
 
-                    for int_ij_k in int_ij:
-                        if Prio_EO[int_ij_k] > Prio_EO[theta_ij]:
-                            # E_k > E_i
-                            int_ij_EO.append(int_ij_k)
-                        else:
-                            # E_k < E_i
-                            if C_dict[int_ij_k] > int_c_max:
-                                int_c_max = C_dict[int_ij_k]
-                                int_ij_k_with_c_max = int_ij_k
+                    if int_ij:
+                        for int_ij_k in int_ij:
+                            if Prio_EO[int_ij_k] > Prio_EO[theta_ij]:
+                                # E_k > E_i, add with confidence
+                                int_ij_EO.append(int_ij_k)
+                            else:
+                                # E_k < E_i, put into a list and later will only get longest m - 1
+                                int_ij_EO_less_candidates.append( int_ij_k )
+                                int_ij_EO_less_candidates_C.append( C_dict[int_ij_k] )
 
-                    if int_ij_k_with_c_max != -1:
-                        int_ij_EO.append(int_ij_k_with_c_max)
+                        # sort nodes by C (if it exists), and append (m-1) longest to int_ij_EO
+                        if int_ij_EO_less_candidates:
+                            list_of_less_EO_nodes_C = int_ij_EO_less_candidates_C
+                            indices, _ = zip(*sorted(enumerate(list_of_less_EO_nodes_C), key=itemgetter(1)))
+                            int_ij_EO_less_candidates_sorted = []
 
-                    int_ij = int_ij_EO.copy()
+                            for idx_ in range(len(list_of_less_EO_nodes_C)):
+                                for v_idx, v_order in enumerate(indices):
+                                    if v_order == idx_:
+                                        int_ij_EO_less_candidates_sorted.append(int_ij_EO_less_candidates[v_idx])
+
+                            for xxx in range(1, m):
+                                if len(int_ij_EO_less_candidates) >= xxx:
+                                    int_ij_EO.append( int_ij_EO_less_candidates[xxx - 1] )
+
+                        int_ij = int_ij_EO.copy()
                 
                 I_dict[theta_ij] = int_ij
                 # >>> end of searching interference nodes
@@ -765,10 +777,10 @@ def Eligiblity_Ordering(task_idx):
 
         # 2. sort theta_i according to l(i)
         if l_i_arr:
-            L = l_i_arr
-            indices, L_sorted = zip(*sorted(enumerate(L), key=itemgetter(1)))
+            list_of_li = l_i_arr
+            indices, L_sorted = zip(*sorted(enumerate(list_of_li), key=itemgetter(1)))
             theta_i_sorted = []
-            for idx_ in range(len(L)):
+            for idx_ in range(len(list_of_li)):
                 for v_idx, v_order in enumerate(indices):
                     if v_order == idx_:
                         theta_i_sorted.append(theta_i[v_idx])
@@ -798,6 +810,23 @@ def rta_np_classic(task_idx, m):
     return makespan
 
 
+def TPDS_Ordering(task_idx):
+    """ Ordering in: 
+    Qingqiang He, et. al, Intra-Task Priority Assignment in Real-Time Scheduling of DAG Tasks on Multi-cores, 2019
+    """
+    Prio = {}
+
+
+
+
+
+
+
+
+
+    return Prio
+
+
 def rta_TPDS(task_idx, m):
     """ Response time analysis in: 
     Qingqiang He, et. al, Intra-Task Priority Assignment in Real-Time Scheduling of DAG Tasks on Multi-cores, 2019
@@ -805,6 +834,26 @@ def rta_TPDS(task_idx, m):
     # --------------------------------------------------------------------------
     # I. load the DAG task
     G_dict, C_dict, lamda, VN_array, L, W = load_task(task_idx)
+
+    # --------------------------------------------------------------------------
+    # II. sort into topological order (skipped)
+
+    # --------------------------------------------------------------------------
+    # III. assignment priorities
+    Prio = TPDS_Ordering(task_idx)
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 def rta_TPDS_multi():
@@ -815,12 +864,12 @@ if __name__ == "__main__":
     task_idx = 19; m = 2 # (2, 4, 8, 16)
 
     R0 = rta_np_classic(task_idx, m)
-    R, alpha, beta = rta_alphabeta_new(task_idx, m, EOPA=True)
-    #R, alpha, beta = rta_alphabeta_new(task_idx, m, EOPA=True)
+    R, alpha, beta = rta_alphabeta_new(task_idx, m, EOPA=False)
     print("- - - - - - - - - - - - - - - - - - - -")
     print("R0 = {}".format(R0))
     print("R1 = {}, alpha = {}, beta = {}".format(R, alpha, beta))
     print("{:.1f} % improvement".format((R0 - R) / float(R0) * 100.0))
 
-    # EOPA(task_idx)
+
+    TPDS_Ordering(task_idx)
     # rta_TPDS(task_idx, m)
