@@ -88,7 +88,10 @@ def find_predecesor(G, node):
 
 
 def find_successor(G, node):
-    return G[node]
+    if node in G:
+        return G[node]
+    else:
+        return []
 
 
 def find_ancestors(G, node, path=[]):
@@ -98,7 +101,7 @@ def find_ancestors(G, node, path=[]):
     #print(node)
 
     if node == v_source:
-        return
+        return a
     
     predecesor_nodes = find_predecesor(G, node)
 
@@ -124,7 +127,7 @@ def find_descendants(G, node, path=[]):
     #print(node)
 
     if node == v_sink:
-        return
+        return a
     
     suscessor_nodes = find_successor(G, node)
 

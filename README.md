@@ -17,6 +17,7 @@ Supported scheduling alogrithms:
 
 - Non-preemptive with random ordering
 - Non-preemptive with eligibility ordering
+- Dynamic C_high first 
 - (Todo) Preemptive Fixed-priority Scheduling 
 - (Todo) Preemptive workload distribution model
 

@@ -67,6 +67,32 @@ def remove_nodes_in_list(nodes, nodes_to_remove):
             nodes.remove(i)
 
 
+def get_nodes_volume(nodes, C_list):
+    ''' sum of workload
+    nodes can be individual nodes or from a path
+    '''
+    volume = 0
+
+    for i in nodes:
+        volume = volume + C_list[i]
+    
+    return volume
+
+
+def remove_nodes_in_graph(G, nodes):
+    ''' remove nodes (and its related edges) from a graph
+    '''
+    for key, value in G.copy().items():
+        if key in nodes:
+            G.pop(key)
+        
+        for v in value:
+            if v in nodes:
+                value.remove(v)
+
+
+################################################################################
+################################################################################
 def find_concurrent_nodes(G, node):
     ''' find concurrent nodes
     '''
@@ -830,12 +856,25 @@ def Eligiblity_Ordering_PA(task_idx):
     return Prio
 
 
-def rta_alphabeta_new_multi():
+def rta_alphabeta_new_multi(taskset):
     """ rta for multi-DAGs
     """
-    pass
+    for i in taskset:
+        R_i = 0
+        D_i = 0
 
 
+        if (R_i > D_i):
+            # even one deadline miss means unschedulable
+
+            return False
+
+    # no deadline miss means taskset is schedulable
+    return True
+
+
+################################################################################
+################################################################################
 def rta_np_classic(task_idx, m):
     """ The classical bound
     """
@@ -844,21 +883,214 @@ def rta_np_classic(task_idx, m):
     return makespan
 
 
-def EMOSFT_Ordering_PA(task_idx):
+################################################################################
+################################################################################
+def EMOSFT_Ordering_PA(task_list, c_list):
+    ''' C_high first
+    task_list <-> c_list maps each by each
+    '''
+    max_index, max_value = max(enumerate(c_list), key=itemgetter(1))
+
+    return task_list[max_index]
+
+
+################################################################################
+################################################################################
+def TPDS_find_interference():
     pass
 
 
-def TPDS_Ordering_PA(task_idx):
+def TPDS_get_len():
+    pass
+
+
+def TPDS_max_l_max_lb(l, lb, A):
+    # l  = {1: 8, 2: 9, 3: 3, 4: 6, 5: 8}
+    # lb = {1: 5, 2: 3, 3: 5, 4: 3, 5: 4}
+    # A  = [1, 2, 3, 4, 5]
+
+    l_array = []
+    lb_array = []
+    l_index = []
+    for vi in A:
+        l_array.append(l[vi])
+        lb_array.append(lb[vi])
+        l_index.append(vi)
+
+    indices, L_sorted = zip(*sorted(enumerate(l_array), reverse=True, key=itemgetter(1)))
+
+    LB_with_L_sorted = []
+    for i in indices:
+        LB_with_L_sorted.append(lb_array[i])
+
+    if len(L_sorted) == 1:
+        # no need to compare if only one node
+        v = l_index[0]
+    else:
+        for idx, li in enumerate(L_sorted):
+            if idx == 0:
+                continue
+            else:
+                if li < L_sorted[idx-1]:
+                    print("found!", idx-1, L_sorted[idx-1])
+                    break
+
+        idx = idx - 1
+
+        if idx == 0:
+            # no draw case
+            v = l_index[indices[idx]]
+        else:
+            # has draw case
+            lb_max = -1
+            lb_max_node = -1
+            
+            for i in range(0, idx+1):
+                if LB_with_L_sorted[i] > lb_max:
+                    lb_max = LB_with_L_sorted[i]
+                    lb_max_node = l_index[indices[i]]
+            
+            v = lb_max_node
+
+    return v
+
+
+def TPDS_Compute_Length(G, C):
+    lf = {}
+    lb = {}
+    l = {}
+
+    # topological ordering
+    # (skipped as this is guaranteed by the generator)
+    G_new = G.copy()
+    theta_i = G_new.keys()
+    
+
+    for theta_ij in theta_i:
+        # calculate the length
+        C_i = C[theta_ij]
+
+        # forward searching in G_new
+        lf_i = C_i
+
+        pre_ij = find_predecesor(G_new, theta_ij)
+        while pre_ij:
+            max_c = 0
+            max_v = -1
+            for idx in pre_ij:
+                if C[idx] > max_c:
+                    max_c = C[idx]
+                    max_v = idx
+            
+            lf_i = lf_i + max_c
+            ve = max_v
+            pre_ij = find_predecesor(G_new, ve)
+
+        # backward searching in G_new
+        lb_i = C_i
+
+        suc_ij = find_successor(G_new, theta_ij)
+        while suc_ij:
+            max_c = 0
+            max_v = -1
+            for idx in suc_ij:
+                if C[idx] > max_c:
+                    max_c = C[idx]
+                    max_v = idx
+            
+            lb_i = lb_i + max_c
+            ve = max_v
+            suc_ij = find_successor(G_new, ve)
+
+        # calculate l
+        l_i = lf_i + lb_i - C_i
+        
+        # assign to length
+        l[theta_ij] = l_i
+        lf[theta_ij] = lf_i
+        lb[theta_ij] = lb_i
+
+    return l, lf, lb
+
+
+def TPDS_Assign_Priority(G, C, l, lf, lb, Prio, p):
+    # note: p is assigned as as array to be able to pass by reference! Only p[0] is used.
+
+    V = list(G.copy().keys())
+    G_copy = G.copy()
+
+    print(V)
+    print(G_copy)
+
+    while V:
+        # find v in V with no predecesor and maximum l(v)
+        l_max = -1
+        l_max_node = -1
+        for vi in V:
+            if not find_predecesor(G_copy, vi):
+                if l[vi] > l_max:
+                    l_max = l[vi]
+                    l_max_node = vi
+        v = l_max_node
+
+        # priority assignment
+        Prio[v] = p[0]; p[0] = p[0] + 1; A = find_successor(G_copy, v)
+
+        # removing v and its related edges
+        remove_nodes_in_graph(G_copy, [v])
+        if v in V:
+            V.remove(v)
+        
+        # iterates A
+        while A:
+            # find v in A with no predecesor and maximum l(v)
+            # when ties, compare lb(v) instead!
+            v = TPDS_max_l_max_lb(l, lb, A)
+
+            if find_predecesor(G_copy, v):
+                G_prime = {}
+                ans_v = find_ancestors(G_copy, v, path=[])
+
+                for key, value in G_copy.copy().items():
+                    if key in ans_v:
+                        for j in value:
+                            if j not in ans_v:
+                                value.remove(j)
+                        
+                        G_prime[key] = value
+
+                TPDS_Assign_Priority(G_prime, C, l, lf, lb, Prio, p)
+                remove_nodes_in_graph(G_copy, ans_v)
+
+                for vv in ans_v:
+                    if vv in V:
+                        V.remove(vv)
+            
+            # removing v and its related edges
+            remove_nodes_in_graph(G_copy, [v])
+            if v in V:
+                V.remove(v)
+
+            # priority assignment
+            Prio[v] = p[0]; p[0] = p[0] + 1; A = find_successor(G_copy, v)
+
+
+def TPDS_Ordering_PA(G, C):
     """ Ordering in: 
     Qingqiang He, et. al, Intra-Task Priority Assignment in Real-Time Scheduling of DAG Tasks on Multi-cores, 2019
     """
-    Prio = {}
+    # 1. Procedure compute length
+    l, lf, lb = TPDS_Compute_Length(G, C)
+
+    # 2. Procedure assign priority
+    prio = {}
+    p_next = [0]
+    TPDS_Assign_Priority(G, C, l, lf, lb, Prio=prio, p=p_next)
+
+    return prio
 
 
-    return Prio
-
-
-def rta_TPDS(task_idx, m):
+def TPDS_rta(task_idx, M):
     """ Response time analysis in: 
     Qingqiang He, et. al, Intra-Task Priority Assignment in Real-Time Scheduling of DAG Tasks on Multi-cores, 2019
     """
@@ -867,19 +1099,93 @@ def rta_TPDS(task_idx, m):
     G_dict, C_dict, lamda, VN_array, L, W = load_task(task_idx)
 
     # --------------------------------------------------------------------------
-    # II. sort into topological order (skipped)
+    # II. assignment priorities
+    Prio = TPDS_Ordering_PA(G_dict, C_dict)
 
     # --------------------------------------------------------------------------
-    # III. assignment priorities
-    Prio = TPDS_Ordering(task_idx)
+    # III. calculate finish time
+    # topological ordering
+    # (skipped as this is guaranteed by the generator)
+    f_dict = {}
+    I_dict = {}
+
+    for theta_ij in G_dict:
+        # start to search interference nodes >>>
+        # concurrent nodes of ij. Note this can be empty.
+        int_ij = find_concurrent_nodes(G_dict, theta_ij)
+
+        ans_ij = find_ancestors(G_dict, theta_ij, path=[])
+        for ij in ans_ij:
+            ans_int = I_dict[ij]
+            for ijij in ans_int:
+                if ijij in int_ij:
+                    int_ij.remove(ijij)
+        
+        # fonly the (m) longest lower priority interference node is kept
+        int_ij_EO = []
+        int_ij_EO_less_candidates = []
+        int_ij_EO_less_candidates_C = []
+
+        if int_ij:
+            for int_ij_k in int_ij:
+                # lower the better
+                if Prio[int_ij_k] < Prio[theta_ij]:
+                    # E_k > E_i, add with confidence
+                    int_ij_EO.append(int_ij_k)
+                else:
+                    # E_k < E_i, put into a list and later will only get longest (m)
+                    int_ij_EO_less_candidates.append( int_ij_k )
+                    int_ij_EO_less_candidates_C.append( C_dict[int_ij_k] )
+
+            # sort nodes by C (if it exists), and append (m-1) longest to int_ij_EO
+            if int_ij_EO_less_candidates:
+                list_of_less_EO_nodes_C = int_ij_EO_less_candidates_C
+                indices, _ = zip(*sorted(enumerate(list_of_less_EO_nodes_C), key=itemgetter(1), reverse=True))
+                #indices = [i[0] for i in sorted(enumerate(list_of_less_EO_nodes_C), key=lambda x:x[1])]
+                int_ij_EO_less_candidates_sorted = []
+
+                for idx_ in range(len(list_of_less_EO_nodes_C)):
+                    int_ij_EO_less_candidates_sorted.append(int_ij_EO_less_candidates[indices[idx_]])
+
+                # adding (m - 1) lower EO nodes
+                for xxx in range(1, m+1):
+                    if len(int_ij_EO_less_candidates) >= xxx:
+                        int_ij_EO.append( int_ij_EO_less_candidates_sorted[xxx - 1] )
+
+        I_dict[theta_ij] = int_ij_EO
+        # >>> end of searching interference nodes
+
+        int_c_sum = sum(C_dict[ij] for ij in int_ij)
+        interference = math.ceil(1.0 / m * int_c_sum)
+
+
+        # find the max finish time of all its predecences
+        f_ij_pre_max = 0
+
+        predecsor_of_ij = find_predecesor(G_dict, theta_ij)
+        for pre_i in predecsor_of_ij:
+            if f_dict[pre_i] > f_ij_pre_max:
+                f_ij_pre_max = f_dict[pre_i]
+
+        # calculate the finish time
+        f_ij = C_dict[theta_ij] + f_ij_pre_max + interference
+        f_dict[theta_ij] = f_ij 
+
+    # --------------------------------------------------------------------------
+    # IV. calculate reponse time
+    R0 = max(f_dict[i] for i in f_dict)
+
+    return R0
 
 
 def rta_TPDS_multi():
     pass
 
 
+################################################################################
+################################################################################
 if __name__ == "__main__":
-    task_idx = 7; m = 2 # (2, 4, 8, 16)
+    task_idx = 14; m = 2 # (2, 4, 8, 16)
 
     # R0 = rta_np_classic(task_idx, m)
     # R, alpha, beta = rta_alphabeta_new(task_idx, m, EOPA=False)
@@ -891,30 +1197,41 @@ if __name__ == "__main__":
     # print("{:.1f} % improvement".format((R0 - R) / float(R0) * 100.0))
 
 
-    with open('result.txt', 'r+') as f:
-        m = 2
+    # with open('result.txt', 'r+') as f:
+    #     m = 2
 
-        for task_idx in range(3, 4):
-            print("- - - - - - - - - - - - - - - - - - - -")
-            print("Tau {}:".format(task_idx))
-            print("- - - - - - - - - - - - - - - - - - - -")
+    #     for task_idx in range(0, 100):
+    #         print("- - - - - - - - - - - - - - - - - - - -")
+    #         print("Tau {}:".format(task_idx))
+    #         print("- - - - - - - - - - - - - - - - - - - -")
 
-            R0 = rta_np_classic(task_idx, m)
-            R, alpha, beta = rta_alphabeta_new(task_idx, m, EOPA=False)
-            print("\r\n \r\n")
-            R_EO, alpha, beta = rta_alphabeta_new(task_idx, m, EOPA=True) 
+    #         R0 = rta_np_classic(task_idx, m)
+    #         R, alpha, beta = rta_alphabeta_new(task_idx, m, EOPA=False)
+    #         print("\r\n \r\n")
+    #         R_EO, alpha, beta = rta_alphabeta_new(task_idx, m, EOPA=True) 
 
-            f.write("- - - - - - - - - - - - - - - - - - - - \r\n")
-            f.write("Tau {}: \r\n".format(task_idx))
+    #         f.write("- - - - - - - - - - - - - - - - - - - - \r\n")
+    #         f.write("Tau {}: \r\n".format(task_idx))
 
-            f.write("R0 = {} \r\n".format(R0))
+    #         f.write("R0 = {} \r\n".format(R0))
 
-            f.write("R1 = {}, alpha = {}, beta = {} \r\n".format(R, alpha, beta))
-            f.write("{:.1f} % improvement \r\n".format((R0 - R) / float(R0) * 100.0))
+    #         f.write("R1 = {}, alpha = {}, beta = {} \r\n".format(R, alpha, beta))
+    #         f.write("{:.1f} % improvement \r\n".format((R0 - R) / float(R0) * 100.0))
 
-            f.write("R2 = {}, alpha = {}, beta = {} \r\n".format(R_EO, alpha, beta))
-            f.write("{:.1f} % improvement \r\n".format((R0 - R_EO) / float(R0) * 100.0))
+    #         f.write("R2 = {}, alpha = {}, beta = {} \r\n".format(R_EO, alpha, beta))
+    #         f.write("{:.1f} % improvement \r\n".format((R0 - R_EO) / float(R0) * 100.0))
 
 
-    #TPDS_Ordering(task_idx)
-    #rta_TPDS(task_idx, m)
+
+    G_test = {1:[2,3,4], 2:[5,6], 3:[7,8], 4:[11], 5:[9], 6:[9], 7:[10], 8:[10], 9:[11], 10:[11], 11:[]}
+    C_test = {1: 1, 2: 5, 3: 6, 4: 7, 5: 3, 6: 6, 7: 4, 8: 2, 9: 9, 10: 13, 11: 1}
+    v_test = [1,11,10]
+    
+    l, lf, lb = TPDS_Compute_Length(G_test, C_test)
+
+    R0 = rta_np_classic(task_idx, m)
+    R, alpha, beta = rta_alphabeta_new(task_idx, m, EOPA=False)
+    R_EO, alpha, beta = rta_alphabeta_new(task_idx, m, EOPA=True)
+    R_TPDS = TPDS_rta(task_idx, m)
+
+    print("done:", R0, R, R_EO, R_TPDS)
