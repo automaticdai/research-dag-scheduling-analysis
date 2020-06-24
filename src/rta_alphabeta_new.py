@@ -897,10 +897,14 @@ def rta_np_classic(task_idx, m):
 
 ################################################################################
 ################################################################################
-def EMOSFT_Ordering_PA(task_list, c_list):
+def EMOSFT_Ordering_PA(task_list, C_dict):
     ''' C_high first
     task_list <-> c_list maps each by each
     '''
+    c_list = []
+    for i in task_list:
+        c_list.append(C_dict[i])
+
     max_index, max_value = max(enumerate(c_list), key=itemgetter(1))
 
     return task_list[max_index]

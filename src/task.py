@@ -49,9 +49,18 @@ class DAGTask(Task):
         
         super().__init__(self)
 
+        # G (dict)
         self.G = G_.copy()
+
+        # C (array)
         self.C = C_.copy()
 
+        # C_dict (dict)
+        self.C_dict = {}
+
+        for i in range(len(self.C)):
+            self.C_dict[i+1] = self.C[i]
+        
         # get all vertices
         self.V = sorted(self.G.keys())
 
@@ -63,6 +72,8 @@ class DAGTask(Task):
                     self.pre[i].append(key)
                 else:
                     self.pre[i] = [key]
+        
+
 
 
     def solve_precondition(self):

@@ -19,6 +19,7 @@ from task import DAGTask, Job
 from processor import Core
 from graph import find_longest_path_dfs, find_associative_nodes
 
+from rta_alphabeta_new import Eligiblity_Ordering_PA, TPDS_Ordering_PA, EMOSFT_Ordering_PA
 
 EXECUTION_MODEL = ["WCET", "HALF_RANDOM", "HALF_RANDOM_NORM", "FULL_RANDOM", "FULL_RANDOM_NORM", "BCET"]
 PREEMPTION_COST = 0
@@ -50,11 +51,74 @@ def trace(msglevel, timestamp, message):
     else: pass
 
 
+def EO_v1():
+    EO_G = dag.G.copy()
+    EO_V = dag.V.copy()
+    wcet = dag.C.copy()
+
+    EO_WCET = {}
+    for i in EO_V:
+        EO_WCET[i] = wcet[i - 1]
+
+    # [Classify nodes]
+    # I. find critical nodes
+    _, EO_V_C = find_longest_path_dfs(EO_G, EO_V[0], EO_V[-1], wcet)
+    
+    # II. find associative nodes
+    candidate = EO_V.copy()
+    for i in EO_V_C:  candidate.remove(i)
+
+    critical_nodes = EO_V_C.copy()
+    critical_nodes.remove(EO_V_C[0])
+    critical_nodes.remove(EO_V_C[-1]) # the source and the sink node is ignored
+
+    EO_V_A = find_associative_nodes(EO_G, candidate, critical_nodes)
+
+    # III. find non-critical nodes (V_NC = V \ V_C \ V_A)
+    EO_V_NC = EO_V.copy()
+    for i in EO_V_C:  EO_V_NC.remove(i)
+    for i in EO_V_A:  EO_V_NC.remove(i)
+
+    # [Assign eligibilities]
+    EO_ELIG_BASE_C = 1000
+    EO_ELIG_BASE_A = 100
+    EO_ELIG_BASE_NC = 1
+    
+    Prio = {}
+
+    # I. Critical
+    offset = EO_ELIG_BASE_C
+    sorted_x = sorted({k: EO_WCET[k] for k in EO_V_C}.items(), key=operator.itemgetter(1), reverse=False)
+    
+    for i in sorted_x:
+        Prio[i[0]] = offset
+        offset = offset + 1
+    
+    # II. Associate
+    # order by WCET (longest first)
+    offset = EO_ELIG_BASE_A
+    sorted_x = sorted({k: EO_WCET[k] for k in EO_V_A}.items(), key=operator.itemgetter(1), reverse=False)
+    for i in sorted_x:
+        Prio[i[0]] = offset
+        offset = offset + 1
+
+    # III. Non-Critical
+    offset = EO_ELIG_BASE_NC
+    sorted_x = sorted({k: EO_WCET[k] for k in EO_V_NC}.items(), key=operator.itemgetter(1), reverse=False)
+    for i in sorted_x:
+        Prio[i[0]] = offset
+        offset = offset + 1
+    
+    #pprint(Prio)
+
+
 def sched(dag, number_of_cores, algorithm = "random", execution_model = "WCET"):
     """
     Policies:
-    - random
+    - random (dynamic)
     - eligibility
+    - TPDS2019
+    - EMSOFT2019 (dynamic)
     
     Execution models:
     - WCET
@@ -79,65 +143,10 @@ def sched(dag, number_of_cores, algorithm = "random", execution_model = "WCET"):
     f_queue = []            # finished nodes queue
 
     if algorithm == "eligibility":
-        EO_G = dag.G.copy()
-        EO_V = dag.V.copy()
-        wcet = dag.C.copy()
-
-        EO_WCET = {}
-        for i in EO_V:
-            EO_WCET[i] = wcet[i - 1]
-
-        # [Classify nodes]
-        # I. find critical nodes
-        _, EO_V_C = find_longest_path_dfs(EO_G, EO_V[0], EO_V[-1], wcet)
-        
-        # II. find associative nodes
-        candidate = EO_V.copy()
-        for i in EO_V_C:  candidate.remove(i)
-
-        critical_nodes = EO_V_C.copy()
-        critical_nodes.remove(EO_V_C[0])
-        critical_nodes.remove(EO_V_C[-1]) # the source and the sink node is ignored
-
-        EO_V_A = find_associative_nodes(EO_G, candidate, critical_nodes)
-
-        # III. find non-critical nodes (V_NC = V \ V_C \ V_A)
-        EO_V_NC = EO_V.copy()
-        for i in EO_V_C:  EO_V_NC.remove(i)
-        for i in EO_V_A:  EO_V_NC.remove(i)
-
-        # [Assign eligibilities]
-        EO_ELIG_BASE_C = 1000
-        EO_ELIG_BASE_A = 100
-        EO_ELIG_BASE_NC = 1
-        
-        EO_eligibility = {}
-
-        # I. Critical
-        offset = EO_ELIG_BASE_C
-        sorted_x = sorted({k: EO_WCET[k] for k in EO_V_C}.items(), key=operator.itemgetter(1), reverse=False)
-        
-        for i in sorted_x:
-            EO_eligibility[i[0]] = offset
-            offset = offset + 1
-        
-        # II. Associate
-        # order by WCET (longest first)
-        offset = EO_ELIG_BASE_A
-        sorted_x = sorted({k: EO_WCET[k] for k in EO_V_A}.items(), key=operator.itemgetter(1), reverse=False)
-        for i in sorted_x:
-            EO_eligibility[i[0]] = offset
-            offset = offset + 1
-
-        # III. Non-Critical
-        offset = EO_ELIG_BASE_NC
-        sorted_x = sorted({k: EO_WCET[k] for k in EO_V_NC}.items(), key=operator.itemgetter(1), reverse=False)
-        for i in sorted_x:
-            EO_eligibility[i[0]] = offset
-            offset = offset + 1
-        
-        #pprint(EO_eligibility)
-
+        Prio = Eligiblity_Ordering_PA(dag.G, dag.C_dict)
+    elif algorithm == "TPDS2019":
+        Prio = TPDS_Ordering_PA(dag.G, dag.C_dict)
+    #pprint(Prio)
 
     # start scheduling
     trace(0, t, "Algorithm = {:s}, Exe_Model = {:s}, #Cores = {:d}".format(algorithm, execution_model, number_of_cores))
@@ -170,15 +179,20 @@ def sched(dag, number_of_cores, algorithm = "random", execution_model = "WCET"):
                 if r_queue:
                     # pick the next task
                     if algorithm == "random":
+                        # dynamic priority
                         task_idx = random.choice(r_queue)
-                    elif algorithm == "eligibility":
+                    elif algorithm == "EMSOFT2019":
+                        # dynamic priority
+                        task_idx = EMOSFT_Ordering_PA(r_queue, dag.C_dict)
+                    elif algorithm == "eligibility" or algorithm == "TPDS2019":
+                        # static priority
                         # find the task with highest eligibities
                         E_MAX = 0
                         task_idx = r_queue[0]
                         for i in r_queue:
-                            if EO_eligibility[i] > E_MAX:
+                            if Prio[i] > E_MAX:
                                 task_idx = i
-                                E_MAX = EO_eligibility[i]
+                                E_MAX = Prio[i]
                     else:
                         task_idx = r_queue[0]
 
