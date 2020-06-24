@@ -242,7 +242,7 @@ def rta_alphabeta_new(task_idx, m, EOPA=False):
     beta_arr = []
 
     if EOPA:
-        Prio_EO = Eligiblity_Ordering_PA(task_idx)
+        Prio_EO = Eligiblity_Ordering_PA(G_dict, C_dict)
 
     # ==========================================================================
     # iteratives all providers (first time, to get all finish times)
@@ -754,15 +754,27 @@ def rta_alphabeta_new(task_idx, m, EOPA=False):
     return R, alpha_arr, beta_arr
 
 
-def Eligiblity_Ordering_PA(task_idx):
+def Eligiblity_Ordering_PA(G_dict, C_dict):
     """ The Eligibility Ordering priority assignment
     """
     Prio = {}
     E_MAX = 2000
 
     # --------------------------------------------------------------------------
-    # I. load the DAG task
-    G_dict, C_dict, lamda, VN_array, _, _ = load_task(task_idx)
+    # I. load task parameters
+    C_exp = []
+    for key in sorted(C_dict):
+        C_exp.append(C_dict[key])
+
+    V_array = list(G_dict.copy().keys())
+    V_array.sort()
+    _, lamda = find_longest_path_dfs(G_dict, V_array[0], V_array[-1], C_exp)
+
+    VN_array = V_array.copy()
+
+    for i in lamda:
+        if i in VN_array:
+            VN_array.remove(i)
 
     # --------------------------------------------------------------------------
     # II. providers and consumers
