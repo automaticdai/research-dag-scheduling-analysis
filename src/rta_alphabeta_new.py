@@ -1151,13 +1151,14 @@ def TPDS_rta(task_idx, M):
                 for xxx in range(1, m+1):
                     if len(int_ij_EO_less_candidates) >= xxx:
                         int_ij_EO.append( int_ij_EO_less_candidates_sorted[xxx - 1] )
-
-        I_dict[theta_ij] = int_ij_EO
+                
+                int_ij = int_ij_EO.copy()
+        
+        I_dict[theta_ij] = int_ij
         # >>> end of searching interference nodes
 
         int_c_sum = sum(C_dict[ij] for ij in int_ij)
         interference = math.ceil(1.0 / m * int_c_sum)
-
 
         # find the max finish time of all its predecences
         f_ij_pre_max = 0
@@ -1185,7 +1186,7 @@ def rta_TPDS_multi():
 ################################################################################
 ################################################################################
 if __name__ == "__main__":
-    task_idx = 14; m = 2 # (2, 4, 8, 16)
+    task_idx = 2; m = 2 # (2, 4, 8, 16)
 
     # R0 = rta_np_classic(task_idx, m)
     # R, alpha, beta = rta_alphabeta_new(task_idx, m, EOPA=False)
@@ -1220,8 +1221,6 @@ if __name__ == "__main__":
 
     #         f.write("R2 = {}, alpha = {}, beta = {} \r\n".format(R_EO, alpha, beta))
     #         f.write("{:.1f} % improvement \r\n".format((R0 - R_EO) / float(R0) * 100.0))
-
-
 
     G_test = {1:[2,3,4], 2:[5,6], 3:[7,8], 4:[11], 5:[9], 6:[9], 7:[10], 8:[10], 9:[11], 10:[11], 11:[]}
     C_test = {1: 1, 2: 5, 3: 6, 4: 7, 5: 3, 6: 6, 7: 4, 8: 2, 9: 9, 10: 13, 11: 1}
