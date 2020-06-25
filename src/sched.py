@@ -256,28 +256,28 @@ if __name__ == "__main__":
     # enable logger
     trace_init(log_to_file = False)
     
-    R2r_all = []
-    R3r_all = []
+    for m in [2, 4, 8, 16]:
+        R_all = []
 
-    for idx in range(100):
-        G_dict, C_dict, C_array, lamda, VN_array, L, W = load_task(idx)
+        for idx in range(1000):
+            G_dict, C_dict, C_array, lamda, VN_array, L, W = load_task(idx)
+            dag = DAGTask(G_dict, C_array)
 
-        dag = DAGTask(G_dict, C_array)
+            # find the high watermark of random
+            R0 = 0
+            for i in range(100):
+                r = sched(dag, number_of_cores = m, algorithm = "random", execution_model = "WCET")
+                if r > R0:
+                    R0 = r
 
-        # pprint(("V:", dag.V))
-        # pprint(("C:", dag.C))
-        # pprint(("Pre:", dag.pre))
+            R1 = sched(dag, number_of_cores = m, algorithm = "eligibility", execution_model = "WCET")
+            R2 = sched(dag, number_of_cores = m, algorithm = "TPDS2019", execution_model = "WCET")
+            R3 = sched(dag, number_of_cores = m, algorithm = "EMSOFT2019", execution_model = "WCET")
 
-        R0 = sched(dag, number_of_cores = 8, algorithm = "eligibility", execution_model = "WCET")
-        R2 = sched(dag, number_of_cores = 8, algorithm = "TPDS2019", execution_model = "WCET")
-        R3 = sched(dag, number_of_cores = 8, algorithm = "EMSOFT2019", execution_model = "WCET")
+            R_all.append([R0, R1, R2, R3])
 
-        R2r = R2 * 1.0 / R0
-        R3r = R3 * 1.0 / R0
+            print("{}, {}, {}, {}, {}".format(idx, R0, R1, R2, R3))
 
-        R2r_all.append(R2r)
-        R3r_all.append(R3r)
-
-        print("1.00,{:0.2f},{:0.2f}".format(R2r, R3r))
-
+        pickle.dump(R_all, open("m{}-simu.p".format(m), "wb"))
+    
     print("Experiment finished!")

@@ -867,12 +867,12 @@ def Eligiblity_Ordering_PA(G_dict, C_dict):
         G_new = copy.deepcopy(G_dict)
 
         for key, value in copy.deepcopy(G_new).items():
-            if key not in theta_i:
+            if (key not in theta_i) and (key not in theta_star_i):
                 del G_new[key]
             else:
                 value_new = value.copy()
                 for j in value:
-                    if j not in theta_i:
+                    if (j not in theta_i) and (j not in theta_star_i):
                         value_new.remove(j)
                 G_new[key] = value_new
         
@@ -1309,16 +1309,20 @@ if __name__ == "__main__":
     #resource.setrlimit(resource.RLIMIT_STACK, (2**29,-1))
     #sys.setrecursionlimit(10**6)
 
-    for task_idx in range(0, 100):
-        m = 4 # (2, 4, 6, 8)
+    for m in (2, 4, 8, 16):
+        results = []
 
-        R0 = rta_np_classic(task_idx, m)
-        R0 = float(R0)
+        for task_idx in range(0, 1000):
+            R0 = rta_np_classic(task_idx, m)
 
-        R, alpha, beta = rta_alphabeta_new(task_idx, m, EOPA=False, TPDS=False)
-        R_AB_EO, alpha, beta = rta_alphabeta_new(task_idx, m, EOPA=True, TPDS=False)
-        R_AB_TPDS, alpha, beta = rta_alphabeta_new(task_idx, m, EOPA=False, TPDS=True)
+            R_AB, alpha, beta = rta_alphabeta_new(task_idx, m, EOPA=False, TPDS=False)
+            R_AB_EO, alpha, beta = rta_alphabeta_new(task_idx, m, EOPA=True, TPDS=False)
+            R_AB_TPDS, alpha, beta = rta_alphabeta_new(task_idx, m, EOPA=False, TPDS=True)
 
-        R_TPDS = TPDS_rta(task_idx, m)
+            R_TPDS = TPDS_rta(task_idx, m)
 
-        print("{:04d} {:.2f} {:.2f} {:.2f} {:.2f}".format(task_idx, R/R0, R_AB_EO/R0, R_AB_TPDS/R0, R_TPDS/R0))
+            print("{}, {}, {}, {}, {}, {}".format(task_idx, R0, R_AB, R_AB_EO, R_AB_TPDS, R_TPDS))
+
+            results.append([task_idx, R0, R_AB, R_AB_EO, R_AB_TPDS, R_TPDS])
+        
+        pickle.dump(results, open("m{}.p".format(m), "wb"))

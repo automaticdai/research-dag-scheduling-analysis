@@ -16,6 +16,12 @@ import networkx as nx
 
 from graph import find_longest_path_dfs, find_predecesor, find_successor, get_subpath_between
 
+
+# return the column of a 2D array
+def column(matrix, i):
+    return [row[i] for row in matrix]
+
+
 # Bars L: x < y
 # Bars EQ: x = y
 # Bars G: x > y
@@ -241,25 +247,13 @@ def exp_rta():
     print("{:>12s} {:>12s} {:>12s}".format("Baseline", "RTA_New", "Diff"))
     print("----------------------------------------")
 
-    for tau in range(10):
+    for idx in range(10):
         G_dict, C_dict, C_array, lamda, VN_array, L, W = load_task(idx)
         dag = DAGTask(G_dict, C_array)
 
-        for m in [2,4,6,8]:
-            # find the high watermark of random
-            R0 = 0
-            for i in range(200):
-                r = sched(dag, number_of_cores = m, algorithm = "random", execution_model = "WCET")
-                if r > R0:
-                    R0 = r
-
-            R1 = sched(dag, number_of_cores = m, algorithm = "eligibility", execution_model = "WCET")
-            R2 = sched(dag, number_of_cores = m, algorithm = "TPDS2019", execution_model = "WCET")
-            R3 = sched(dag, number_of_cores = m, algorithm = "EMSOFT2019", execution_model = "WCET")
-
-            # diff = max((rta_baseline - rta_a), 0) / rta_baseline * 100
-            # diff_array.append(diff)
-            # print("{:>12.1f} {:>12.1f} {:>12.1f}".format(rta_baseline, rta_a, diff))
+        diff = max((rta_baseline - rta_a), 0) / rta_baseline * 100
+        diff_array.append(diff)
+        print("{:>12.1f} {:>12.1f} {:>12.1f}".format(rta_baseline, rta_a, diff))
     
     print("----------------------------------------")
     pickle.dump(diff_array, open("m8.p", "wb"))
