@@ -222,6 +222,36 @@ def find_providers_consumers(G_dict, lamda, VN_array):
     return providers, consumers
 
 
+def find_G_theta_i_star(G, providers, consumers, i):
+    G_theta_i_star = []
+
+    # collect all consumer nodes in the following providers
+    number_of_providers = len(providers) 
+    if i == number_of_providers - 1:
+        # skip as this is the last provider
+        return []
+
+    theta_i = consumers[i]
+
+
+    all_later_consumer_nodes = []
+    for l in range(i + 1, number_of_providers):
+        for k in consumers[l]:
+            all_later_consumer_nodes.append(k)
+
+
+
+    for theta_ij in theta_i:
+        con_ij = find_concurrent_nodes(G, theta_ij)
+
+        for k in con_ij:
+            if k in all_later_consumer_nodes:
+                if k not in G_theta_i_star:
+                    G_theta_i_star.append(k)
+
+    return G_theta_i_star
+
+
 def rta_alphabeta_new(task_idx, m, EOPA=False, TPDS=False):
     """ Response time analysis using alpha_beta
     """
@@ -485,13 +515,21 @@ def rta_alphabeta_new(task_idx, m, EOPA=False, TPDS=False):
                 f_v_j_max = f_ij
                 f_v_j_max_idx = theta_ij
         
-        # (!) R_i_m_minus_one is no longer needed
-        #R_i_m_minus_one = f_v_j_max
-
+        # --------------------------------------------------------------------------
         # start to calculate the response time of provider i
         Wi_nc = sum(C_dict[ij] for ij in theta_i)
         Li = sum(C_dict[ij] for ij in theta_i_star)
         Wi = Wi_nc + Li 
+
+
+        if not EOPA and not TPDS:
+            # G(theta_i^*) needs to be added for random
+            # Wi and Wi_nc will be updated
+            G_theta_i_star = find_G_theta_i_star(G_dict, providers, consumers, i)
+
+            Wi_G = sum(C_dict[ij] for ij in G_theta_i_star)
+            Wi_nc = Wi_nc + Wi_G
+            Wi = Wi_nc + Li
 
         # --------------------------------------------------------------------------
         # IV. bound alpha and beta
@@ -552,11 +590,25 @@ def rta_alphabeta_new(task_idx, m, EOPA=False, TPDS=False):
 
             for _, theta_ij in enumerate(theta_i):
                 if f_dict[theta_ij] <= f_theta_i_star:
-                    alpha_hat_class_a.append(theta_ij)
+                    if theta_ij not in alpha_hat_class_a:
+                        alpha_hat_class_a.append(theta_ij)
                 elif f_dict[theta_ij] < f_theta_i_star + C_dict[theta_ij]:
-                    alpha_hat_class_b.append(theta_ij)
+                    if theta_ij not in alpha_hat_class_b:
+                        alpha_hat_class_b.append(theta_ij)
                 else:
                     pass
+
+            if not EOPA and not TPDS:
+                # for random, the alpha_i is different
+                for _, theta_ij in enumerate(G_theta_i_star):
+                    if f_dict[theta_ij] <= f_theta_i_star:
+                        if theta_ij not in alpha_hat_class_a:
+                            alpha_hat_class_a.append(theta_ij)
+                    elif f_dict[theta_ij] < f_theta_i_star + C_dict[theta_ij]:
+                        if theta_ij not in alpha_hat_class_b:
+                            alpha_hat_class_b.append(theta_ij)
+                    else:
+                        pass
 
             print_debug("A:", alpha_hat_class_a, "B:", alpha_hat_class_b)
 
@@ -746,8 +798,8 @@ def rta_alphabeta_new(task_idx, m, EOPA=False, TPDS=False):
                     I_term_for_EO = math.ceil(1.0 / m * I_ve)
 
                     # check: I_ve should <= (Wi - Li - alpha_i - beta_i)
-                    print_debug("(DEBUG) Wi - Li - alpha_i - beta_i: {}".format( Wi - Li - alpha_i - beta_i ))
-                    print_debug("(DEBUG) I_ve: {}".format( I_ve ))
+                    #print_debug("(DEBUG) Wi - Li - alpha_i - beta_i: {}".format( Wi - Li - alpha_i - beta_i ))
+                    #print_debug("(DEBUG) I_ve: {}".format( I_ve ))
 
                 Ri = Li + beta_i + I_term_for_EO
 
@@ -760,6 +812,13 @@ def rta_alphabeta_new(task_idx, m, EOPA=False, TPDS=False):
         beta_arr.append(beta_i)
 
     R = R_i_minus_one
+
+
+    # bound R to the classic bound
+    # if not EOPA and not TPDS:
+    #     R_classic = rta_np_classic(task_idx, m)
+    #     R = min(R, R_classic)
+
 
     return R, alpha_arr, beta_arr
 
@@ -901,7 +960,7 @@ def rta_np_classic(task_idx, m):
     """ The classical bound
     """
     _, _, _, _, _, L, W = load_task(task_idx)
-    makespan = math.ceil( L + 1 / m * (W - L) )
+    makespan = L + math.ceil(1 / m * (W - L) )
     return makespan
 
 
@@ -1251,7 +1310,7 @@ if __name__ == "__main__":
     #sys.setrecursionlimit(10**6)
 
     for task_idx in range(0, 100):
-        m = 8 # (2, 4, 6, 8)
+        m = 4 # (2, 4, 6, 8)
 
         R0 = rta_np_classic(task_idx, m)
         R0 = float(R0)
