@@ -20,6 +20,7 @@ from processor import Core
 from graph import find_longest_path_dfs, find_associative_nodes
 
 from rta_alphabeta_new import Eligiblity_Ordering_PA, TPDS_Ordering_PA, EMOSFT_Ordering_PA
+from rta_alphabeta_new import load_task
 
 EXECUTION_MODEL = ["WCET", "HALF_RANDOM", "HALF_RANDOM_NORM", "FULL_RANDOM", "FULL_RANDOM_NORM", "BCET"]
 PREEMPTION_COST = 0
@@ -112,7 +113,7 @@ def EO_v1():
     #pprint(Prio)
 
 
-def sched(dag, number_of_cores, algorithm = "random", execution_model = "WCET"):
+def sched(dag, number_of_cores, algorithm = "random", execution_model = "WCET", T_MAX = 1000000000):
     """
     Policies:
     - random (dynamic)
@@ -127,7 +128,6 @@ def sched(dag, number_of_cores, algorithm = "random", execution_model = "WCET"):
     """
 
     t = 0
-    T_MAX = 100000
 
     # initialize cores
     cores = []
@@ -184,7 +184,7 @@ def sched(dag, number_of_cores, algorithm = "random", execution_model = "WCET"):
                     elif algorithm == "EMSOFT2019":
                         # dynamic priority
                         task_idx = EMOSFT_Ordering_PA(r_queue, dag.C_dict)
-                    elif algorithm == "eligibility" or algorithm == "TPDS2019":
+                    elif algorithm == "eligibility":
                         # static priority
                         # find the task with highest eligibities
                         E_MAX = 0
@@ -193,6 +193,15 @@ def sched(dag, number_of_cores, algorithm = "random", execution_model = "WCET"):
                             if Prio[i] > E_MAX:
                                 task_idx = i
                                 E_MAX = Prio[i]
+                    elif algorithm == "TPDS2019":
+                        # static priority
+                        # find the task with highest eligibities
+                        E_MIN = 1000000
+                        task_idx = r_queue[0]
+                        for i in r_queue:
+                            if Prio[i] < E_MIN:
+                                task_idx = i
+                                E_MIN = Prio[i]
                     else:
                         task_idx = r_queue[0]
 
@@ -243,22 +252,32 @@ def sched(dag, number_of_cores, algorithm = "random", execution_model = "WCET"):
 
 
 if __name__ == "__main__":
+    # test code::
     # enable logger
     trace_init(log_to_file = False)
     
-    # example taskset
-    G_exp = {1:[2,3,4], 2:[5,6], 3:[7,8], 4:[11], 5:[9], 6:[9], 7:[10], 8:[10], 9:[11], 10:[11], 11:[]}
-    C_exp = [1, 5, 6, 7, 3, 6, 4, 2, 9, 8, 1]
-    dag = DAGTask(G_exp, C_exp)
+    R2r_all = []
+    R3r_all = []
 
-    pprint(("V:", dag.V))
-    pprint(("C:", dag.C))
-    pprint(("Pre:", dag.pre))
+    for idx in range(100):
+        G_dict, C_dict, C_array, lamda, VN_array, L, W = load_task(idx)
 
-    print(" ")
-    sched(dag, number_of_cores = 2, algorithm = "random", execution_model = "WCET")
-    
-    print(" ")
-    sched(dag, number_of_cores = 2, algorithm = "eligibility", execution_model = "WCET")
-    
-    print(" ")
+        dag = DAGTask(G_dict, C_array)
+
+        # pprint(("V:", dag.V))
+        # pprint(("C:", dag.C))
+        # pprint(("Pre:", dag.pre))
+
+        R0 = sched(dag, number_of_cores = 8, algorithm = "eligibility", execution_model = "WCET")
+        R2 = sched(dag, number_of_cores = 8, algorithm = "TPDS2019", execution_model = "WCET")
+        R3 = sched(dag, number_of_cores = 8, algorithm = "EMSOFT2019", execution_model = "WCET")
+
+        R2r = R2 * 1.0 / R0
+        R3r = R3 * 1.0 / R0
+
+        R2r_all.append(R2r)
+        R3r_all.append(R3r)
+
+        print("1.00,{:0.2f},{:0.2f}".format(R2r, R3r))
+
+    print("Experiment finished!")

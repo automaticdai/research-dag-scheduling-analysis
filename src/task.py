@@ -73,6 +73,9 @@ class DAGTask(Task):
                 else:
                     self.pre[i] = [key]
         
+        for key, item in self.G.items():
+            if key not in self.pre:
+                self.pre[key] = []
 
 
 

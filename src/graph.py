@@ -9,6 +9,8 @@
 # Note:
 # This library is indepdent of other graph programming libraries, e.g., NetworkX.
 
+import copy
+
 def find_all_paths(G_, start_vertex, end_vertex, path=[]):
     """ find all paths from start_vertex to end_vertex in graph """
     graph = G_
@@ -95,22 +97,32 @@ def find_successor(G, node):
 
 
 def find_ancestors(G, node, path=[]):
+    G_copy = copy.deepcopy(G)
+    return find_ancestors_iter(G_copy, node, path=[])
+
+
+def find_ancestors_iter(G, node, path=[]):
     v_source = source(G)
     a = []
-    
+
     #print(node)
+    #print(path)
 
     if node == v_source:
-        return a
-    
+        return []
+
     predecesor_nodes = find_predecesor(G, node)
+    
+    if not predecesor_nodes:
+        return []
+
+    remove_nodes(G, [node])
 
     for v in predecesor_nodes:
         path.append(v)
-        find_ancestors(G, v, path)
-    
-    #print(path)
+        find_ancestors_iter(G, v, path)
 
+    #print(path)
     for i in path:
         if i not in a:
             a.append(i)
@@ -121,22 +133,31 @@ def find_ancestors(G, node, path=[]):
 
 
 def find_descendants(G, node, path=[]):
+    G_copy = copy.deepcopy(G)
+    return find_descendants_iter(G_copy, node, path=[])
+
+
+def find_descendants_iter(G, node, path=[]):
     v_sink = sink(G)
     a = []
     
     #print(node)
 
     if node == v_sink:
-        return a
+        return []
     
-    suscessor_nodes = find_successor(G, node)
+    successor_nodes = find_successor(G, node)
 
-    for v in suscessor_nodes:
+    if not successor_nodes:
+        return []
+
+    remove_nodes(G, [node])
+
+    for v in successor_nodes:
         path.append(v)
-        find_descendants(G, v, path)
+        find_descendants_iter(G, v, path)
     
     #print(path)
-
     for i in path:
         if i not in a:
             a.append(i)
@@ -144,6 +165,18 @@ def find_descendants(G, node, path=[]):
     a.sort()
 
     return a
+
+
+def remove_nodes(G, nodes):
+    ''' remove nodes (and its related edges) from a graph
+    '''
+    for key, value in G.copy().items():
+        if key in nodes:
+            G.pop(key)
+        else:
+            for v in value:
+                if v in nodes:
+                    value.remove(v)
 
 
 def sink(G):

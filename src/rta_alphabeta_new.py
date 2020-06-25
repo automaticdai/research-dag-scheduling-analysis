@@ -7,8 +7,13 @@ import pickle
 from operator import itemgetter
 
 import networkx as nx
+import copy
 
 from graph import find_longest_path_dfs, find_predecesor, find_successor, find_ancestors, find_descendants, get_subpath_between
+
+def print_debug(*args, **kw):
+    #print(args, kw)
+    pass
 
 
 def load_task(task_idx):
@@ -43,13 +48,13 @@ def load_task(task_idx):
     G_dict[max_key] = []
 
     # formulate the c list (c[0] is c for v1!!)
-    C_exp = []
+    C_array = []
     for key in sorted(C_dict):
-        C_exp.append(C_dict[key])
+        C_array.append(C_dict[key])
 
     V_array.sort()
-    L, lamda = find_longest_path_dfs(G_dict, V_array[0], V_array[-1], C_exp)
-    W = sum(C_exp)
+    L, lamda = find_longest_path_dfs(G_dict, V_array[0], V_array[-1], C_array)
+    W = sum(C_array)
 
     VN_array = V_array.copy()
 
@@ -58,7 +63,7 @@ def load_task(task_idx):
             VN_array.remove(i)
 
     # >> end of load DAG task >>
-    return G_dict, C_dict, lamda, VN_array, L, W
+    return G_dict, C_dict, C_array, lamda, VN_array, L, W
 
 
 def remove_nodes_in_list(nodes, nodes_to_remove):
@@ -85,10 +90,10 @@ def remove_nodes_in_graph(G, nodes):
     for key, value in G.copy().items():
         if key in nodes:
             G.pop(key)
-        
-        for v in value:
-            if v in nodes:
-                value.remove(v)
+        else:
+            for v in value:
+                if v in nodes:
+                    value.remove(v)
 
 
 ################################################################################
@@ -118,7 +123,7 @@ def test_parallelism(G, node, n):
     while node_left:
         # this search is limited to node, 
         # so all keys and values that do not contain node_left will be removed
-        G_new = G.copy()
+        G_new = copy.deepcopy(G)
 
         for key, value in G_new.copy().items():
             if key not in node_left:
@@ -132,7 +137,7 @@ def test_parallelism(G, node, n):
                 G_new[key] = value_new
         delta = delta + 1
         if delta >= n:
-            #print("PARALLISM: False")
+            #print_debug("PARALLISM: False")
             return False
 
         finished = False
@@ -150,7 +155,7 @@ def test_parallelism(G, node, n):
                 node_left.remove(suc_ve_first)
             suc_ve = find_successor(G_new, ve)
 
-    #print("PARALLISM: True")
+    #print_debug("PARALLISM: True")
     return True
 
 
@@ -169,12 +174,11 @@ def find_providers_consumers(G_dict, lamda, VN_array):
         if ((key+1) < len(lamda)):
             pre_nodes = find_predecesor(G_dict, lamda[key+1])
 
-            print("Checking: ", i, "Pre: ", pre_nodes)
-
+            #print_debug("Checking: ", i, "Pre: ", pre_nodes)
             if pre_nodes == [i]:    
                 new_provider.append(lamda[key+1])
             else:
-                print("New provider:", new_provider)
+                #print_debug("New provider:", new_provider)
                 providers.append(new_provider)
                 new_provider = []
 
@@ -190,12 +194,13 @@ def find_providers_consumers(G_dict, lamda, VN_array):
 
                     # find any ancestor of this pre-node
                     ancestors_of_node = find_ancestors(G_dict, pre_node, path=[])
+
                     remove_nodes_in_list(ancestors_of_node, lamda)
                     if ancestors_of_node:
                         for anc_v in ancestors_of_node:
                             if anc_v not in new_consumer and anc_v in nc_nodes_left:  new_consumer.append(anc_v)
 
-                        print(ancestors_of_node)
+                        #print_debug(ancestors_of_node)
 
                 new_consumer.sort()
                 consumers.append(new_consumer)
@@ -207,7 +212,7 @@ def find_providers_consumers(G_dict, lamda, VN_array):
                 new_consumer = []
         else:
             # the last node needs special care as it has no successors
-            print("New provider:", new_provider)
+            #print_debug("New provider:", new_provider)
             providers.append(new_provider)
 
             # find all consumers (all the left nc nodes)
@@ -217,20 +222,20 @@ def find_providers_consumers(G_dict, lamda, VN_array):
     return providers, consumers
 
 
-def rta_alphabeta_new(task_idx, m, EOPA=False):
+def rta_alphabeta_new(task_idx, m, EOPA=False, TPDS=False):
     """ Response time analysis using alpha_beta
     """
     # --------------------------------------------------------------------------
     # I. load the DAG task
-    G_dict, C_dict, lamda, VN_array, L, W = load_task(task_idx)
+    G_dict, C_dict, C_array, lamda, VN_array, L, W = load_task(task_idx)
 
     # --------------------------------------------------------------------------
     # II. providers and consumers
     # iterative all critical nodes
     # after this, all provides and consumers will be collected
     providers, consumers = find_providers_consumers(G_dict, lamda, VN_array)
-    print("Providers:", providers)
-    print("Consumers:", consumers)
+    print_debug("Providers:", providers)
+    print_debug("Consumers:", consumers)
 
     # --------------------------------------------------------------------------
     # III. calculate the finish times of each provider, and the consumers within
@@ -242,14 +247,19 @@ def rta_alphabeta_new(task_idx, m, EOPA=False):
     beta_arr = []
 
     if EOPA:
-        Prio_EO = Eligiblity_Ordering_PA(G_dict, C_dict)
+        Prio = Eligiblity_Ordering_PA(G_dict, C_dict)
+    elif TPDS:
+        Prio = TPDS_Ordering_PA(G_dict, C_dict)
+        # reverse the order
+        for i in Prio:
+            Prio[i] = 10000 - Prio[i]
 
     # ==========================================================================
     # iteratives all providers (first time, to get all finish times)
     for i, theta_i_star in enumerate(providers):
-        print("- - - - - - - - - - - - - - - - - - - -")
-        print("theta(*)", i, ":", theta_i_star)
-        print("theta", i, ":", consumers[i])  
+        print_debug("- - - - - - - - - - - - - - - - - - - -")
+        print_debug("theta(*)", i, ":", theta_i_star)
+        print_debug("theta", i, ":", consumers[i])  
 
         # get the finish time of all provider nodes (in provider i)
         for _, provi_i in enumerate(theta_i_star):
@@ -285,23 +295,23 @@ def rta_alphabeta_new(task_idx, m, EOPA=False):
                 # start to search interference nodes >>>
                 # concurrent nodes of ij. Can be empty.
                 con_ij = find_concurrent_nodes(G_dict, theta_ij)
-                #print("Con nodes:", con_ij)
+                #print_debug("Con nodes:", con_ij)
 
                 int_ij = con_ij.copy()
                 remove_nodes_in_list(int_ij, lamda)
 
                 ans_ij = find_ancestors(G_dict, theta_ij, path=[])
                 remove_nodes_in_list(ans_ij, lamda)
-                #print("Ans nodes:", ans_ij)
+                #print_debug("Ans nodes:", ans_ij)
 
                 for ij in ans_ij:
                     ans_int = I_dict[ij]
                     for ijij in ans_int:
                         if ijij in int_ij:
                             int_ij.remove(ijij)
-                #print("Int nodes:", int_ij)
+                #print_debug("Int nodes:", int_ij)
                 
-                if EOPA:
+                if EOPA or TPDS:
                     # for EOPA, only the (m - 1) longest lower priority interference node is kept
                     int_ij_EO = []
                     int_ij_EO_less_candidates = []
@@ -309,7 +319,7 @@ def rta_alphabeta_new(task_idx, m, EOPA=False):
 
                     if int_ij:
                         for int_ij_k in int_ij:
-                            if Prio_EO[int_ij_k] > Prio_EO[theta_ij]:
+                            if Prio[int_ij_k] > Prio[theta_ij]:
                                 # E_k > E_i, add with confidence
                                 int_ij_EO.append(int_ij_k)
                             else:
@@ -351,7 +361,7 @@ def rta_alphabeta_new(task_idx, m, EOPA=False):
             # calculate the finish time
             f_ij = C_dict[theta_ij] + f_ij_pre_max + interference
             f_dict[theta_ij] = f_ij
-            print("f_theta({}) : {}".format(theta_ij, f_dict[theta_ij]))
+            print_debug("f_theta({}) : {}".format(theta_ij, f_dict[theta_ij]))
 
 
 
@@ -360,9 +370,9 @@ def rta_alphabeta_new(task_idx, m, EOPA=False):
     # the finish times of provider nodes have to be calculated again to get f_theta_i_star
     # the finish times of consumer nodes have to be calculated again to get lambda_ve
     for i, theta_i_star in enumerate(providers):
-        print("- - - - - - - - - - - - - - - - - - - -")
-        print("theta(*)", i, ":", theta_i_star)
-        print("theta", i, ":", consumers[i])  
+        print_debug("- - - - - - - - - - - - - - - - - - - -")
+        print_debug("theta(*)", i, ":", theta_i_star)
+        print_debug("theta", i, ":", consumers[i])  
 
         # get the finish time of all provider nodes (in provider i)
         for _, provi_i in enumerate(theta_i_star):
@@ -380,7 +390,7 @@ def rta_alphabeta_new(task_idx, m, EOPA=False):
             f_dict[provi_i] = f_i
             f_theta_i_star = f_i # finish time of theta_i_star. every loop refreshes this
         
-        print("finish time of theta(*)", f_theta_i_star)
+        print_debug("finish time of theta(*)", f_theta_i_star)
 
         # iteratives all consumers
         # (skipped) topoligical order, skipped because guaranteed by the generator
@@ -388,7 +398,7 @@ def rta_alphabeta_new(task_idx, m, EOPA=False):
         theta_i = consumers[i]
         f_v_j_max = 0; f_v_j_max_idx = -1
         for _, theta_ij in enumerate(theta_i):
-            print(theta_ij, ":", C_dict[theta_ij])
+            print_debug(theta_ij, ":", C_dict[theta_ij])
             
             # the interference term
             con_nc_ij = find_concurrent_nodes(G_dict, theta_ij)
@@ -402,23 +412,23 @@ def rta_alphabeta_new(task_idx, m, EOPA=False):
                 # start to search interference nodes >>>
                 # concurrent nodes of ij. Can be empty.
                 con_ij = find_concurrent_nodes(G_dict, theta_ij)
-                #print("Con nodes:", con_ij)
+                #print_debug("Con nodes:", con_ij)
 
                 int_ij = con_ij.copy()
                 remove_nodes_in_list(int_ij, lamda)
 
                 ans_ij = find_ancestors(G_dict, theta_ij, path=[])
                 remove_nodes_in_list(ans_ij, lamda)
-                #print("Ans nodes:", ans_ij)
+                #print_debug("Ans nodes:", ans_ij)
 
                 for ij in ans_ij:
                     ans_int = I_dict[ij]
                     for ijij in ans_int:
                         if ijij in int_ij:
                             int_ij.remove(ijij)
-                #print("Int nodes:", int_ij)
+                #print_debug("Int nodes:", int_ij)
                 
-                if EOPA:
+                if EOPA or TPDS:
                     # for EOPA, only the (m - 1) longest lower priority interference node is kept
                     int_ij_EO = []
                     int_ij_EO_less_candidates = []
@@ -426,7 +436,7 @@ def rta_alphabeta_new(task_idx, m, EOPA=False):
 
                     if int_ij:
                         for int_ij_k in int_ij:
-                            if Prio_EO[int_ij_k] > Prio_EO[theta_ij]:
+                            if Prio[int_ij_k] > Prio[theta_ij]:
                                 # E_k > E_i, add with confidence
                                 int_ij_EO.append(int_ij_k)
                             else:
@@ -468,7 +478,7 @@ def rta_alphabeta_new(task_idx, m, EOPA=False):
             # calculate the finish time
             f_ij = C_dict[theta_ij] + f_ij_pre_max + interference
             f_dict[theta_ij] = f_ij
-            print("f_theta({}) : {}".format(theta_ij, f_dict[theta_ij]))
+            print_debug("f_theta({}) : {}".format(theta_ij, f_dict[theta_ij]))
 
             # find max(f_vj)
             if f_ij > f_v_j_max:
@@ -487,12 +497,12 @@ def rta_alphabeta_new(task_idx, m, EOPA=False):
         # IV. bound alpha and beta
         # For Case A (has no delay to the critical path):
         if (f_theta_i_star >= f_v_j_max):
-            print("** Case A **")
+            print_debug("** Case A **")
             alpha_i = Wi_nc
             beta_i = 0
         # For Case B (has delay to the critical path):
         else:
-            print("** Case B **")
+            print_debug("** Case B **")
             # search for lamda_ve
             ve = f_v_j_max_idx  # end node & backward search
             lamda_ve = [ve]
@@ -531,7 +541,7 @@ def rta_alphabeta_new(task_idx, m, EOPA=False):
                 else:
                     len_lamda_ve = len_lamda_ve + max((f_dict[ve_i] - f_theta_i_star), 0)
             
-            print("lamda_ve:", lamda_ve, "len:", len_lamda_ve)
+            print_debug("lamda_ve:", lamda_ve, "len:", len_lamda_ve)
 
             # beta_i
             beta_i = len_lamda_ve
@@ -548,7 +558,7 @@ def rta_alphabeta_new(task_idx, m, EOPA=False):
                 else:
                     pass
 
-            print("A:", alpha_hat_class_a, "B:", alpha_hat_class_b)
+            print_debug("A:", alpha_hat_class_a, "B:", alpha_hat_class_b)
 
             alpha_i_hat = sum(C_dict[ij] for ij in alpha_hat_class_a) + \
                             sum(f_theta_i_star - (f_dict[ij] - C_dict[ij]) for ij in alpha_hat_class_b)
@@ -638,21 +648,21 @@ def rta_alphabeta_new(task_idx, m, EOPA=False):
                             # start to search interference nodes >>>
                             # concurrent nodes of ij. Can be empty.
                             con_ij = find_concurrent_nodes(G_dict, theta_ij)
-                            #print("Con nodes:", con_ij)
+                            #print_debug("Con nodes:", con_ij)
 
                             int_ij = con_ij.copy()
                             remove_nodes_in_list(int_ij, lamda)
 
                             ans_ij = find_ancestors(G_dict, theta_ij, path=[])
                             remove_nodes_in_list(ans_ij, lamda)
-                            #print("Ans nodes:", ans_ij)
+                            #print_debug("Ans nodes:", ans_ij)
 
                             for ij in ans_ij:
                                 ans_int = I_dict[ij]
                                 for ijij in ans_int:
                                     if ijij in int_ij:
                                         int_ij.remove(ijij)
-                            #print("Int nodes:", int_ij)
+                            #print_debug("Int nodes:", int_ij)
 
                             I_dict[theta_ij] = int_ij
                             # >>> end of searching interference nodes
@@ -676,7 +686,7 @@ def rta_alphabeta_new(task_idx, m, EOPA=False):
                         # calculate the finish time
                         f_ij = C_dict[theta_ij] + f_ij_pre_max + interference
 
-                        print("Finish time of {:} updated from {:} to {:}".format(theta_ij, f_dict[theta_ij], f_ij))
+                        print_debug("Finish time of {:} updated from {:} to {:}".format(theta_ij, f_dict[theta_ij], f_ij))
                         f_dict[theta_ij] = f_ij
 
             # calculate f_delta = sum[(f_ve - f_theta_i_star)]0
@@ -697,12 +707,12 @@ def rta_alphabeta_new(task_idx, m, EOPA=False):
             # alpha_i is the max of the two
             alpha_i = max(alpha_i_hat, alpha_i_new)
         
-        if not EOPA:
+        if not EOPA and not TPDS:
             # RTA-CFP
             # calculate the response time based on alpha_i and beta_i
-            #Ri = Li + beta_i + math.ceil(1.0 / m * (Wi - Li - alpha_i - beta_i))
+            Ri = Li + beta_i + math.ceil(1.0 / m * (Wi - Li - alpha_i - beta_i))
             # this improved is to bound Ri to be better than classic bound
-            Ri = Li + math.ceil(1.0 / m * (Wi - Li - max(alpha_i - (m-1) * beta_i, 0)))
+            #Ri = Li + math.ceil(1.0 / m * (Wi - Li - max(alpha_i - (m-1) * beta_i, 0)))
         else:
             # RTA-CFP + EOPA
             if beta_i == 0:
@@ -736,15 +746,15 @@ def rta_alphabeta_new(task_idx, m, EOPA=False):
                     I_term_for_EO = math.ceil(1.0 / m * I_ve)
 
                     # check: I_ve should <= (Wi - Li - alpha_i - beta_i)
-                    print("(DEBUG) Wi - Li - alpha_i - beta_i: {}".format( Wi - Li - alpha_i - beta_i ))
-                    print("(DEBUG) I_ve: {}".format( I_ve ))
+                    print_debug("(DEBUG) Wi - Li - alpha_i - beta_i: {}".format( Wi - Li - alpha_i - beta_i ))
+                    print_debug("(DEBUG) I_ve: {}".format( I_ve ))
 
                 Ri = Li + beta_i + I_term_for_EO
 
-        print("R_i:", Ri)
+        print_debug("R_i:", Ri)
 
         R_i_minus_one = R_i_minus_one + Ri
-        print("R_sum: ", R_i_minus_one)
+        print_debug("R_sum: ", R_i_minus_one)
 
         alpha_arr.append(alpha_i)
         beta_arr.append(beta_i)
@@ -758,7 +768,7 @@ def Eligiblity_Ordering_PA(G_dict, C_dict):
     """ The Eligibility Ordering priority assignment
     """
     Prio = {}
-    E_MAX = 2000
+    E_MAX = 10000
 
     # --------------------------------------------------------------------------
     # I. load task parameters
@@ -766,7 +776,7 @@ def Eligiblity_Ordering_PA(G_dict, C_dict):
     for key in sorted(C_dict):
         C_exp.append(C_dict[key])
 
-    V_array = list(G_dict.copy().keys())
+    V_array = list(copy.deepcopy(G_dict).keys())
     V_array.sort()
     _, lamda = find_longest_path_dfs(G_dict, V_array[0], V_array[-1], C_exp)
 
@@ -795,9 +805,9 @@ def Eligiblity_Ordering_PA(G_dict, C_dict):
         l_i_arr = []
         
         # build up a new (temporal) DAG with only the consumers
-        G_new = G_dict.copy()
+        G_new = copy.deepcopy(G_dict)
 
-        for key, value in G_new.copy().items():
+        for key, value in copy.deepcopy(G_new).items():
             if key not in theta_i:
                 del G_new[key]
             else:
@@ -890,7 +900,7 @@ def rta_alphabeta_new_multi(taskset):
 def rta_np_classic(task_idx, m):
     """ The classical bound
     """
-    _, _, _, _, L, W = load_task(task_idx)
+    _, _, _, _, _, L, W = load_task(task_idx)
     makespan = math.ceil( L + 1 / m * (W - L) )
     return makespan
 
@@ -948,7 +958,7 @@ def TPDS_max_l_max_lb(l, lb, A):
                 continue
             else:
                 if li < L_sorted[idx-1]:
-                    print("found!", idx-1, L_sorted[idx-1])
+                    #print_debug("found!", idx-1, L_sorted[idx-1])
                     break
 
         idx = idx - 1
@@ -978,7 +988,7 @@ def TPDS_Compute_Length(G, C):
 
     # topological ordering
     # (skipped as this is guaranteed by the generator)
-    G_new = G.copy()
+    G_new = copy.deepcopy(G)
     theta_i = G_new.keys()
     
 
@@ -1032,11 +1042,11 @@ def TPDS_Compute_Length(G, C):
 def TPDS_Assign_Priority(G, C, l, lf, lb, Prio, p):
     # note: p is assigned as as array to be able to pass by reference! Only p[0] is used.
 
-    V = list(G.copy().keys())
-    G_copy = G.copy()
+    V = list(copy.deepcopy(G).keys())
+    G_copy = copy.deepcopy(G)
 
-    print(V)
-    print(G_copy)
+    #print_debug(V)
+    #print_debug(G_copy)
 
     while V:
         # find v in V with no predecesor and maximum l(v)
@@ -1067,7 +1077,7 @@ def TPDS_Assign_Priority(G, C, l, lf, lb, Prio, p):
                 G_prime = {}
                 ans_v = find_ancestors(G_copy, v, path=[])
 
-                for key, value in G_copy.copy().items():
+                for key, value in copy.deepcopy(G_copy).items():
                     if key in ans_v:
                         for j in value:
                             if j not in ans_v:
@@ -1112,7 +1122,7 @@ def TPDS_rta(task_idx, M):
     """
     # --------------------------------------------------------------------------
     # I. load the DAG task
-    G_dict, C_dict, lamda, VN_array, L, W = load_task(task_idx)
+    G_dict, C_dict, C_array, lamda, VN_array, L, W = load_task(task_idx)
 
     # --------------------------------------------------------------------------
     # II. assignment priorities
@@ -1202,29 +1212,27 @@ def rta_TPDS_multi():
 ################################################################################
 ################################################################################
 if __name__ == "__main__":
-    task_idx = 2; m = 2 # (2, 4, 8, 16)
-
     # R0 = rta_np_classic(task_idx, m)
     # R, alpha, beta = rta_alphabeta_new(task_idx, m, EOPA=False)
     #R, alpha, beta = rta_alphabeta_new(task_idx, m, EOPA=True)
 
-    # print("- - - - - - - - - - - - - - - - - - - -")
-    # print("R0 = {}".format(R0))
-    # print("R1 = {}, alpha = {}, beta = {}".format(R, alpha, beta))
-    # print("{:.1f} % improvement".format((R0 - R) / float(R0) * 100.0))
+    # print_debug("- - - - - - - - - - - - - - - - - - - -")
+    # print_debug("R0 = {}".format(R0))
+    # print_debug("R1 = {}, alpha = {}, beta = {}".format(R, alpha, beta))
+    # print_debug("{:.1f} % improvement".format((R0 - R) / float(R0) * 100.0))
 
 
     # with open('result.txt', 'r+') as f:
     #     m = 2
 
     #     for task_idx in range(0, 100):
-    #         print("- - - - - - - - - - - - - - - - - - - -")
-    #         print("Tau {}:".format(task_idx))
-    #         print("- - - - - - - - - - - - - - - - - - - -")
+    #         print_debug("- - - - - - - - - - - - - - - - - - - -")
+    #         print_debug("Tau {}:".format(task_idx))
+    #         print_debug("- - - - - - - - - - - - - - - - - - - -")
 
     #         R0 = rta_np_classic(task_idx, m)
     #         R, alpha, beta = rta_alphabeta_new(task_idx, m, EOPA=False)
-    #         print("\r\n \r\n")
+    #         print_debug("\r\n \r\n")
     #         R_EO, alpha, beta = rta_alphabeta_new(task_idx, m, EOPA=True) 
 
     #         f.write("- - - - - - - - - - - - - - - - - - - - \r\n")
@@ -1238,15 +1246,20 @@ if __name__ == "__main__":
     #         f.write("R2 = {}, alpha = {}, beta = {} \r\n".format(R_EO, alpha, beta))
     #         f.write("{:.1f} % improvement \r\n".format((R0 - R_EO) / float(R0) * 100.0))
 
-    G_test = {1:[2,3,4], 2:[5,6], 3:[7,8], 4:[11], 5:[9], 6:[9], 7:[10], 8:[10], 9:[11], 10:[11], 11:[]}
-    C_test = {1: 1, 2: 5, 3: 6, 4: 7, 5: 3, 6: 6, 7: 4, 8: 2, 9: 9, 10: 13, 11: 1}
-    v_test = [1,11,10]
-    
-    l, lf, lb = TPDS_Compute_Length(G_test, C_test)
+    #import resource, sys
+    #resource.setrlimit(resource.RLIMIT_STACK, (2**29,-1))
+    #sys.setrecursionlimit(10**6)
 
-    R0 = rta_np_classic(task_idx, m)
-    R, alpha, beta = rta_alphabeta_new(task_idx, m, EOPA=False)
-    R_EO, alpha, beta = rta_alphabeta_new(task_idx, m, EOPA=True)
-    R_TPDS = TPDS_rta(task_idx, m)
+    for task_idx in range(0, 100):
+        m = 8 # (2, 4, 6, 8)
 
-    print("done:", R0, R, R_EO, R_TPDS)
+        R0 = rta_np_classic(task_idx, m)
+        R0 = float(R0)
+
+        R, alpha, beta = rta_alphabeta_new(task_idx, m, EOPA=False, TPDS=False)
+        R_AB_EO, alpha, beta = rta_alphabeta_new(task_idx, m, EOPA=True, TPDS=False)
+        R_AB_TPDS, alpha, beta = rta_alphabeta_new(task_idx, m, EOPA=False, TPDS=True)
+
+        R_TPDS = TPDS_rta(task_idx, m)
+
+        print("{:04d} {:.2f} {:.2f} {:.2f} {:.2f}".format(task_idx, R/R0, R_AB_EO/R0, R_AB_TPDS/R0, R_TPDS/R0))
