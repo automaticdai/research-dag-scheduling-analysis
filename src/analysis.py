@@ -259,8 +259,171 @@ def exp_rta():
     pickle.dump(diff_array, open("m8.p", "wb"))
 
 
-if __name__ == "__main__":
-    #plot_boxplots_from_trace()
 
-    #exp_rta()
-    #plot_rta()
+def rtss_boxplot_rta():
+    # load data
+    results = pickle.load(open("m8.p", "rb"))
+
+    task_idx = column(results, 0)
+    R0 = column(results, 1)
+    R_AB = column(results, 2)
+    R_AB_EO = column(results, 3)
+    R_AB_TPDS = column(results, 4)
+    R_TPDS = column(results, 5)
+
+    # clean data
+    for idx, value in enumerate(R0):
+        R_AB[idx] = R_AB[idx] * 1.0 / value 
+
+        if R_AB[idx] > 1:
+            #R_AB[idx] = 1
+            pass
+
+        R_AB_EO[idx] = R_AB_EO[idx] * 1.0 / value 
+        R_AB_TPDS[idx] = R_AB_TPDS[idx] * 1.0 / value 
+        R_TPDS[idx] = R_TPDS[idx] * 1.0 / value 
+
+        R0[idx] =  1
+
+
+    # boxplot 
+    boxplot_data = [R0, R_AB, R_AB_EO, R_AB_TPDS, R_TPDS]
+
+
+
+    bp1 = plt.boxplot(boxplot_data,
+                        notch=False,  # notch shape
+                        vert=True,  # vertical box alignment
+                        patch_artist=True,  # fill with color
+                        showfliers=True)
+
+    colors = ['lightblue', 'lightgreen', 'pink', 'orange', 'red']
+    for idx, box in enumerate(bp1['boxes']):
+         box.set_facecolor(colors[idx])
+    
+    plt.title('RTA')
+    plt.xticks([1,2,3,4,5], ["R0","R_AB","R_AB_EO","R_AB_TPDS","R_TPDS"])
+    plt.show()
+
+
+
+
+
+
+    # diff_array = pickle.load(open("m2.p", "rb"))
+    # boxplot_data.append(diff_array)
+    # cm2 = (sum(i > 0  for i in diff_array))
+
+    # diff_array = pickle.load(open("m4.p", "rb"))
+    # boxplot_data.append(diff_array)
+    # cm4 = (sum(i > 0  for i in diff_array))
+
+    # diff_array = pickle.load(open("m6.p", "rb"))
+    # boxplot_data.append(diff_array)
+    # cm6 = (sum(i > 0  for i in diff_array))
+
+    # diff_array = pickle.load(open("m8.p", "rb"))
+    # boxplot_data.append(diff_array)
+    # cm8 = (sum(i > 0  for i in diff_array))
+
+    # plot the boxplot
+
+
+
+    # 
+    # plt.ylabel("Precentage of Improvement (%)")
+
+    # plt.show()
+
+
+
+
+
+
+    # plot the bar charts
+    # N = 4
+    # a_means = (1, 2, 3, 4)
+    # b_means = (5, 6, 7, 8)
+
+    # ind = np.arange(N) 
+    # width = 0.35       
+    # plt.bar(ind, a_means, width, label='RTA_new is better')
+    # plt.bar(ind + width, b_means, width, label='RTA_new is not better')
+
+    # plt.ylabel('# of cases')
+    # plt.title('RTA_new compared with RTA_traditional')
+
+    # plt.xticks(ind + width / 2, ('m = 2', 'm = 4', 'm = 6', 'm = 8'))
+    # plt.legend(loc='best')
+    # plt.show()
+
+
+def rtss_boxplot_simulation():
+    # load data
+    results = pickle.load(open("m2-simu.p", "rb"))
+
+    M0 = column(results, 0)
+    M_EO = column(results, 1)
+    M_TPDS = column(results, 2)
+    M_EMSOFT = column(results, 3)
+
+    # clean data
+    for idx, value in enumerate(M0):
+        M_EO[idx] = M_EO[idx] * 1.0 / value 
+        if M_EO[idx] > 1:
+            M_EO[idx] = 1
+
+        M_TPDS[idx] = M_TPDS[idx] * 1.0 / value 
+        M_EMSOFT[idx] = M_EMSOFT[idx] * 1.0 / value 
+
+        M0[idx] =  1
+
+
+    # boxplot 
+    boxplot_data = [M0, M_EO, M_TPDS, M_EMSOFT]
+
+
+
+    bp1 = plt.boxplot(boxplot_data,
+                        notch=False,  # notch shape
+                        vert=True,  # vertical box alignment
+                        patch_artist=True,  # fill with color
+                        showfliers=True)
+
+    colors = ['lightblue', 'lightgreen', 'pink', 'orange']
+    for idx, box in enumerate(bp1['boxes']):
+        box.set_facecolor(colors[idx])
+    
+    plt.title('Simulation')
+    plt.xticks([1,2,3,4], ["M0","M_EO","M_TPDS","M_EMSOFT"])
+    plt.show()
+
+
+def compare_rta_with_simu():
+    # load data
+    results = pickle.load(open("m2.p", "rb"))
+
+    task_idx = column(results, 0)
+    R0 = column(results, 1)
+    R_AB = column(results, 2)
+    R_AB_EO = column(results, 3)
+    R_AB_TPDS = column(results, 4)
+    R_TPDS = column(results, 5)
+
+    # load data
+    results = pickle.load(open("m2-simu.p", "rb"))
+
+    M0 = column(results, 0)
+    M_EO = column(results, 1)
+    M_TPDS = column(results, 2)
+    M_EMSOFT = column(results, 3)
+
+    for idx, i in enumerate(task_idx):
+        print(M_EO[i], R0[i], R_AB_EO[i], M_EO[i] <= R_AB[i], M_EO[i] <= R_AB_EO[i])
+
+
+if __name__ == "__main__":
+    rtss_boxplot_rta()
+    #rtss_boxplot_simulation()
+
+    #compare_rta_with_simu()
