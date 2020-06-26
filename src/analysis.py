@@ -15,6 +15,7 @@ import pickle
 import networkx as nx
 
 from graph import find_longest_path_dfs, find_predecesor, find_successor, get_subpath_between
+from rta_alphabeta_new import rta_np_classic
 
 
 # return the column of a 2D array
@@ -80,11 +81,11 @@ def plot_boxplots_from_trace():
                 j[0], j[1], j[2], j[3], j[4], j[5], j[6], j[7], j[8], j[9], j[10], j[11] = j[0], j[6], j[1], j[7], j[2], j[8], j[3], j[9], j[4], j[10], j[5], j[11]
 
                 # use RTA to get makespan
-                makespan = rta_np(taskset_idx, 2)
+                makespan = rta_np_classic(taskset_idx, 2)
                 boxplot_data.insert(0, [makespan])
                 boxplot_label.insert(0, "rta-m2")
 
-                makespan = rta_np(taskset_idx, 4)
+                makespan = rta_np_classic(taskset_idx, 4)
                 boxplot_data.insert(7, [makespan])
                 boxplot_label.insert(7, "rta-m4")
 
@@ -241,25 +242,6 @@ def plot_rta():
     plt.show()
 
 
-def exp_rta():
-    diff_array = []
-
-    print("{:>12s} {:>12s} {:>12s}".format("Baseline", "RTA_New", "Diff"))
-    print("----------------------------------------")
-
-    for idx in range(10):
-        G_dict, C_dict, C_array, lamda, VN_array, L, W = load_task(idx)
-        dag = DAGTask(G_dict, C_array)
-
-        diff = max((rta_baseline - rta_a), 0) / rta_baseline * 100
-        diff_array.append(diff)
-        print("{:>12.1f} {:>12.1f} {:>12.1f}".format(rta_baseline, rta_a, diff))
-    
-    print("----------------------------------------")
-    pickle.dump(diff_array, open("m8.p", "wb"))
-
-
-
 def rtss_boxplot_rta():
     # load data
     results = pickle.load(open("m8.p", "rb"))
@@ -307,9 +289,6 @@ def rtss_boxplot_rta():
 
 
 
-
-
-
     # diff_array = pickle.load(open("m2.p", "rb"))
     # boxplot_data.append(diff_array)
     # cm2 = (sum(i > 0  for i in diff_array))
@@ -334,8 +313,6 @@ def rtss_boxplot_rta():
     # plt.ylabel("Precentage of Improvement (%)")
 
     # plt.show()
-
-
 
 
 
@@ -399,8 +376,8 @@ def rtss_boxplot_simulation():
     plt.show()
 
 
-def compare_rta_with_simu():
-    # load data
+def comparison():
+    # load data (RTA)
     results = pickle.load(open("m2.p", "rb"))
 
     task_idx = column(results, 0)
@@ -410,7 +387,7 @@ def compare_rta_with_simu():
     R_AB_TPDS = column(results, 4)
     R_TPDS = column(results, 5)
 
-    # load data
+    # load data (simu)
     results = pickle.load(open("m2-simu.p", "rb"))
 
     M0 = column(results, 0)
@@ -418,12 +395,14 @@ def compare_rta_with_simu():
     M_TPDS = column(results, 2)
     M_EMSOFT = column(results, 3)
 
+    # rta vs simu
     for idx, i in enumerate(task_idx):
         print(M_EO[i], R0[i], R_AB_EO[i], M_EO[i] <= R_AB[i], M_EO[i] <= R_AB_EO[i])
 
+    # M_EO vs 
 
 if __name__ == "__main__":
-    rtss_boxplot_rta()
+    #rtss_boxplot_rta()
     #rtss_boxplot_simulation()
 
-    #compare_rta_with_simu()
+    comparison()
