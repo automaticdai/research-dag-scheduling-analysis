@@ -873,11 +873,230 @@ def rta_alphabeta_new(task_idx, m, EOPA=False, TPDS=False):
     return R, alpha_arr, beta_arr
 
 
+def EO_Compute_Length(G, C):
+    lf = {}
+    lb = {}
+    l = {}
+
+    # topological ordering
+    # (skipped as this is guaranteed by the generator)
+    G_new = copy.deepcopy(G)
+    theta_i = G_new.keys()
+    
+    for theta_ij in theta_i:
+        # calculate the length
+        C_i = C[theta_ij]
+
+        # forward searching in G_new
+        lf_i = C_i
+
+        pre_ij = find_predecesor(G_new, theta_ij)
+        while pre_ij:
+            max_c = 0
+            max_v = -1
+            for idx in pre_ij:
+                if C[idx] > max_c:
+                    max_c = C[idx]
+                    max_v = idx
+            
+            lf_i = lf_i + max_c
+            ve = max_v
+            pre_ij = find_predecesor(G_new, ve)
+
+        # backward searching in G_new
+        lb_i = C_i
+
+        suc_ij = find_successor(G_new, theta_ij)
+        while suc_ij:
+            max_c = 0
+            max_v = -1
+            for idx in suc_ij:
+                if C[idx] > max_c:
+                    max_c = C[idx]
+                    max_v = idx
+            
+            lb_i = lb_i + max_c
+            ve = max_v
+            suc_ij = find_successor(G_new, ve)
+
+        # calculate l
+        l_i = lf_i + lb_i - C_i
+        
+        # assign to length
+        l[theta_ij] = l_i
+        lf[theta_ij] = lf_i
+        lb[theta_ij] = lb_i
+
+    return l, lf, lb
+
+
+e = 1000000 # this has to be global, or be passed by reference
+
+def EO_iter(G_dict, C_dict, providers, consumers, Prio):
+    global e
+    # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    nodes = []
+    for theta_star_i in providers:
+        for theta_star_ij in theta_star_i:
+            nodes.append(theta_star_ij)
+
+    for theta_i in consumers:
+        for theta_ij in theta_i:
+            nodes.append(theta_ij)
+
+    for iii in nodes:
+        if Prio[iii] != -1:
+            raise Exception("Some prioirities are already assigned!")
+    # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+    for theta_star_i in providers:
+        for i in theta_star_i:
+            Prio[i] = e
+    
+    e = e - 1
+
+    for i, theta_star_i in enumerate(providers):
+        theta_i = consumers[i]
+        while theta_i:
+            # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+            for iii in theta_i:
+                if Prio[iii] != -1:
+                    raise Exception("Some prioirities are already assigned!")
+            # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+            # --------------------------------------------------------------------------
+            # build up a new (temporal) DAG with only the consumers
+            G_new = copy.deepcopy(G_dict)
+            for key, value in copy.deepcopy(G_new).items():
+                if (key not in theta_i):
+                    del G_new[key]
+                else:
+                    value_new = value.copy()
+                    for j in value:
+                        if (j not in theta_i):
+                            value_new.remove(j)
+                    G_new[key] = value_new
+
+            # --------------------------------------------------------------------------
+            # find the longest local path in theta_i
+            # find l(v_i)
+            l, lf, lb = EO_Compute_Length(G_new, C_dict)
+
+            lamda_ve = []
+
+            # find ve
+            ve = -1
+            l_max = -1
+            for theta_ij in theta_i:
+                if not find_successor(G_new, theta_ij):
+                    if l[theta_ij] > l_max:
+                        l_max = l[theta_ij]
+                        ve = theta_ij
+
+            # found ve, then found lamda_ve
+            if ve != -1:
+                lamda_ve.append(ve)
+                pre_ve = find_predecesor(G_new, ve)
+                while pre_ve:
+                    ve = -1
+                    l_max = -1
+                    for theta_ij in pre_ve:
+                        # if not find_predecesor(G_new, theta_ij):
+                        if l[theta_ij] > l_max:
+                            l_max = l[theta_ij]
+                            ve = theta_ij
+                    if ve != -1:
+                        lamda_ve.append(ve)
+                    pre_ve = find_predecesor(G_new, ve)
+
+            # find an existed vj
+            found_vj = False
+            lamda_ve.sort()
+            for vj in lamda_ve:
+                pre_vj = find_predecesor(G_new, vj)
+                if len(pre_vj) > 1:
+                    found_vj = True
+
+            if found_vj:
+                # update VN_array
+                V_array = list(copy.deepcopy(G_new).keys())
+                V_array.sort()
+                VN_array = V_array.copy()
+                for lamda_ve_i in lamda_ve:
+                    VN_array.remove(lamda_ve_i)
+                
+                # find new providers and consumers
+                providers_new, consumers_new = find_providers_consumers(G_new, lamda_ve, VN_array)
+                EO_iter(G_new, C_dict, providers_new, consumers_new, Prio)
+                break
+            else:
+                # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+                for vjjj in lamda_ve:
+                    if Prio[vjjj] != -1:
+                        raise Exception("Priority abnormal!")
+                # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+                
+                for vj in lamda_ve:
+                    Prio[vj] = e; e = e - 1
+
+                # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+                for vjjj in lamda_ve:
+                    if Prio[vjjj] <= 0:
+                        raise Exception("Priority abnormal!")
+                # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+                remove_nodes_in_list(theta_i, lamda_ve)
+
+
 def Eligiblity_Ordering_PA(G_dict, C_dict):
+
+    Prio = {}
+    
+    # --------------------------------------------------------------------------
+    # I. load task parameters
+    C_exp = []
+    for key in sorted(C_dict):
+        C_exp.append(C_dict[key])
+
+    V_array = list(copy.deepcopy(G_dict).keys())
+    V_array.sort()
+    _, lamda = find_longest_path_dfs(G_dict, V_array[0], V_array[-1], C_exp)
+
+    VN_array = V_array.copy()
+
+    for i in lamda:
+        if i in VN_array:
+            VN_array.remove(i)
+
+    # --------------------------------------------------------------------------
+    # II. initialize eligbilities to -1
+    for i in G_dict:
+        Prio[i] = -1
+
+    # --------------------------------------------------------------------------
+    # III. providers and consumers
+    # iterative all critical nodes
+    # after this, all provides and consumers will be collected
+    providers, consumers = find_providers_consumers(G_dict, lamda, VN_array)
+
+    # --------------------------------------------------------------------------
+    # IV. Start iteration
+    EO_iter(G_dict, C_dict, providers, consumers, Prio)
+
+    # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+    for i in Prio:
+        if Prio[i] <= 1:
+            raise Exception("Some prioirities are not assigned!")
+    # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+    return Prio
+
+
+def Eligiblity_Ordering_PA_legacy(G_dict, C_dict):
     """ The Eligibility Ordering priority assignment
     """
     Prio = {}
-    E_MAX = 10000
+    E_MAX = 1000000
 
     # --------------------------------------------------------------------------
     # I. load task parameters
@@ -917,12 +1136,12 @@ def Eligiblity_Ordering_PA(G_dict, C_dict):
         G_new = copy.deepcopy(G_dict)
 
         for key, value in copy.deepcopy(G_new).items():
-            if (key not in theta_i) and (key not in theta_star_i):
+            if (key not in theta_i): # and (key not in theta_star_i):
                 del G_new[key]
             else:
                 value_new = value.copy()
                 for j in value:
-                    if (j not in theta_i) and (j not in theta_star_i):
+                    if (j not in theta_i): # and (j not in theta_star_i):
                         value_new.remove(j)
                 G_new[key] = value_new
         
@@ -980,14 +1199,17 @@ def Eligiblity_Ordering_PA(G_dict, C_dict):
             for j in theta_i_sorted:
                 Prio[j] = E_next
                 E_next = E_next - 1
+                if E_next <= 0:
+                    raise Exception("Eligbility runs out!")
 
-        E_next = E_next - 100
         iter_idx = iter_idx + 1
 
     return Prio
 
 
-def rta_multi(taskset):
+################################################################################
+################################################################################
+def rta_np_multi(taskset):
     """ rta for multi-DAGs
     """
     task = [G_i, C_i, T_i, P_i]
