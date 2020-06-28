@@ -1,6 +1,32 @@
-r_0626_01: first try
-r_0626_02: second try
-r_0626_03: fixed a,b analysis where some I_ve is not added; and parallelism test is fixed.
-r_0626_04: improved a,b analysis where I_lambda_ve is relaxed.
-r_0627_01: improved EO ordering
+r_0628_01: 
+- updated generator (orphans not fully connected)
+- exp1: scale m
+  - p = 8, d = (5,12), p = 0.5
+  - L no constraint
+  - *m = 2-8
+- exp2: scale p
+  - m = 6
+  - L no constraint
+  - *p = 4-8
+- exp3: scale %L
+  - m = 6
+  - p = ?%
+  - *L = 50% - 90%
+- exp4: multi-DAG 
+- dataset
+  - data-generic: no constraint on P
+  - data-p*: parallelism = P
+  - data-multi-U*: multiDAGs with total utilization = *
+------------------------------------------------------------------------------------------------
 r_0627_02: fix buges and some minor improvements
+------------------------------------------------------------------------------------------------
+r_0627_01: improved EO ordering
+------------------------------------------------------------------------------------------------
+r_0626_04: improved a,b analysis where I_lambda_ve is relaxed.
+------------------------------------------------------------------------------------------------
+r_0626_03: fixed a,b analysis where some I_ve is not added; and parallelism test is fixed.
+------------------------------------------------------------------------------------------------
+r_0626_02: second try
+------------------------------------------------------------------------------------------------
+r_0626_01: first try
+------------------------------------------------------------------------------------------------

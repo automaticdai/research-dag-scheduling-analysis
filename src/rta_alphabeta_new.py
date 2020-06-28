@@ -16,9 +16,11 @@ def print_debug(*args, **kw):
     pass
 
 
+dag_base_folder = "./data-generic/"
+L_ratio = -1
 def load_task(task_idx):
     # << load DAG task <<
-    dag_task_file = "../dag-gen-rnd/data/Tau_{:d}.gpickle".format(task_idx)
+    dag_task_file = dag_base_folder + "Tau_{:d}.gpickle".format(task_idx)
 
     # task is saved as NetworkX gpickle format
     G = nx.read_gpickle(dag_task_file)
@@ -61,6 +63,38 @@ def load_task(task_idx):
     for i in lamda:
         if i in VN_array:
             VN_array.remove(i)
+
+    # scale L (the length of the critical path)
+    if L_ratio != -1:
+        # print("Old L ratio:", L * 1.0 / W)
+
+        L_old = L
+        vol_old = W - L
+
+        L_new = L_ratio * W
+        vol_new = (1 - L_ratio) * W
+
+        L_multiplier = L_new / L_old
+
+        L = 0
+        for i in lamda:
+            C_dict[i] = max(round(C_dict[i] * L_multiplier), 1)
+            L = L + C_dict[i] 
+
+        vol_multiplier = vol_new / vol_old
+        for i in VN_array:
+            C_dict[i] = max(round(C_dict[i] * vol_multiplier), 1)
+
+        # formulate the c list (c[0] is c for v1!!)
+        C_array = []
+        for key in sorted(C_dict):
+            C_array.append(C_dict[key])
+
+        # check critical path!!!!
+        L_prime, lamda_prime = find_longest_path_dfs(G_dict, V_array[0], V_array[-1], C_array)
+
+        if lamda_prime != lamda or L_prime != L:
+            raise Exception("Lambda does not hold!")
 
     # >> end of load DAG task >>
     return G_dict, C_dict, C_array, lamda, VN_array, L, W
@@ -1579,20 +1613,68 @@ if __name__ == "__main__":
     #R = rta_alphabeta_new(11, 2, EOPA=True, TPDS=False)
     #exit(0)
 
-    for m in [2, 4, 6, 8]:
-        results = []
+    exp = 3
+    # exp 1: RTA
+    # exp 2: scale p
+    # exp 3: scale L
+    # exp 4: multi-DAG
 
-        for task_idx in range(1000):
-            R0 = rta_np_classic(task_idx, m)
+    if exp == 1:
+        # exp 1
+        for m in [2,3,4,5,6,7,8]:
+            results = []
+            for task_idx in range(1000):
+                # run the five methods
+                R0 = rta_np_classic(task_idx, m)
+                R_AB, alpha, beta = rta_alphabeta_new(task_idx, m, EOPA=False, TPDS=False)
+                R_AB_EO, alpha, beta = rta_alphabeta_new(task_idx, m, EOPA=True, TPDS=False)
+                R_AB_TPDS, alpha, beta = rta_alphabeta_new(task_idx, m, EOPA=False, TPDS=True)
+                R_TPDS = TPDS_rta(task_idx, m)
 
-            R_AB, alpha, beta = rta_alphabeta_new(task_idx, m, EOPA=False, TPDS=False)
-            R_AB_EO, alpha, beta = rta_alphabeta_new(task_idx, m, EOPA=True, TPDS=False)
-            R_AB_TPDS, alpha, beta = rta_alphabeta_new(task_idx, m, EOPA=False, TPDS=True)
+                print("{}, {}, {}, {}, {}, {}".format(task_idx, R0, R_AB, R_AB_EO, R_AB_TPDS, R_TPDS))
 
-            R_TPDS = TPDS_rta(task_idx, m)
+                results.append([task_idx, R0, R_AB, R_AB_EO, R_AB_TPDS, R_TPDS])
+            
+            pickle.dump(results, open("m{}.p".format(m), "wb"))
+    elif exp == 2:
+        # exp 2
+        m = 6
+        for p in [4,5,6,7,8]:
+            dag_base_folder = "./data-p{}/".format(p)
+            results = []
+            for task_idx in range(1000):
+                # run the five methods
+                R0 = rta_np_classic(task_idx, m)
+                R_AB, alpha, beta = rta_alphabeta_new(task_idx, m, EOPA=False, TPDS=False)
+                R_AB_EO, alpha, beta = rta_alphabeta_new(task_idx, m, EOPA=True, TPDS=False)
+                R_AB_TPDS, alpha, beta = rta_alphabeta_new(task_idx, m, EOPA=False, TPDS=True)
+                R_TPDS = TPDS_rta(task_idx, m)
 
-            print("{}, {}, {}, {}, {}, {}".format(task_idx, R0, R_AB, R_AB_EO, R_AB_TPDS, R_TPDS))
+                print("{}, {}, {}, {}, {}, {}".format(task_idx, R0, R_AB, R_AB_EO, R_AB_TPDS, R_TPDS))
 
-            results.append([task_idx, R0, R_AB, R_AB_EO, R_AB_TPDS, R_TPDS])
-        
-        pickle.dump(results, open("m{}.p".format(m), "wb"))
+                results.append([task_idx, R0, R_AB, R_AB_EO, R_AB_TPDS, R_TPDS])
+            
+            pickle.dump(results, open("m{}-p{}.p".format(m,p), "wb"))
+    elif exp == 3:
+        # exp 3
+        m = 3
+        p = 8
+        for L in [0.6, 0.7, 0.8, 0.9]:
+            dag_base_folder = "./data-p{}/".format(p)
+            L_ratio = L
+            results = []
+            for task_idx in range(1000):
+                # run the five methods
+                R0 = rta_np_classic(task_idx, m)
+                R_AB, alpha, beta = rta_alphabeta_new(task_idx, m, EOPA=False, TPDS=False)
+                R_AB_EO, alpha, beta = rta_alphabeta_new(task_idx, m, EOPA=True, TPDS=False)
+                R_AB_TPDS, alpha, beta = rta_alphabeta_new(task_idx, m, EOPA=False, TPDS=True)
+                R_TPDS = TPDS_rta(task_idx, m)
+
+                print("{}, {}, {}, {}, {}, {}".format(task_idx, R0, R_AB, R_AB_EO, R_AB_TPDS, R_TPDS))
+
+                results.append([task_idx, R0, R_AB, R_AB_EO, R_AB_TPDS, R_TPDS])
+            
+            pickle.dump(results, open("m{}-p{}-L{:.2f}.p".format(m,p,L), "wb"))
+    elif exp == 4:
+        pass

@@ -6,6 +6,7 @@
 # Real-Time Systems Group
 # University of York, UK
 
+import math
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -15,7 +16,7 @@ import pickle
 import networkx as nx
 
 from graph import find_longest_path_dfs, find_predecesor, find_successor, get_subpath_between
-from rta_alphabeta_new import rta_np_classic
+from rta_alphabeta_new import rta_np_classic, load_task
 
 
 # return the column of a 2D array
@@ -363,33 +364,27 @@ def comparison_RTA_Simu():
 
 
 
+basefolder = "./r_0628_01/"
 
-
-def comparison_EO_TPDS(m):
-    # load data (simu)
-    results = pickle.load(open("m{}.p".format(m), "rb")) # 
-
-    RTA_EO = column(results, 3)
-    RTA_TPDS = column(results, 4)
-
+def comparison_A_B_counting(A, B):
     # rta vs simu
     count_less = 0
     count_equal = 0
     count_larger = 0
 
-    sum_of_diff = 0
+    advantage_cases = []
 
     for i in range(1000):
-        a = RTA_EO[i]
-        b = RTA_TPDS[i]
+        a = A[i]
+        b = B[i]
 
-        print(RTA_EO[i] < RTA_TPDS[i])
+        #print(A[i] < B[i])
         
         if a < b:
             count_less = count_less + 1
-            diff = (b-a) * 1.0 / b * 100
-            sum_of_diff = sum_of_diff + diff 
-            print(diff)
+            diff_percentage = (b-a) * 1.0 / b * 100
+            advantage_cases.append(diff_percentage)
+            #print(diff_percentage)
     
         if a == b:
             count_equal = count_equal + 1
@@ -397,8 +392,8 @@ def comparison_EO_TPDS(m):
         if a > b:
             count_larger = count_larger + 1
     
-    print(count_less, count_equal, count_larger)
-    print(sum_of_diff / count_less)
+    #print(count_less, count_equal, count_larger)
+    print(sum(advantage_cases) / len(advantage_cases), max(advantage_cases), min(advantage_cases))
 
     return count_less, count_equal, count_larger
 
@@ -410,14 +405,14 @@ def set_box_color(bp, color):
     plt.setp(bp['medians'], color=color)
 
 
-def boxplot_rta_grouped():
+def boxplot_rta_grouped_scale_m():
     data_a = []
     data_b = []
     data_c = []
     data_d = []
 
-    for m in [2, 4, 6, 8]:
-        results = pickle.load(open("m{}.p".format(m), "rb"))
+    for m in [2, 4, 6, 7, 8]:
+        results = pickle.load(open(basefolder + "m{}.p".format(m), "rb"))
 
         task_idx = column(results, 0)
         R0 = column(results, 1)
@@ -452,7 +447,7 @@ def boxplot_rta_grouped():
         data_d.append(R_AB_EO)
 
 
-    ticks = ['m=2', 'm=4', 'm=6', 'm=8']
+    ticks = ['m=2', 'm=4', 'm=6', 'm=7', 'm=8']
 
     plt.figure()
 
@@ -487,6 +482,225 @@ def boxplot_rta_grouped():
     plt.show()
 
 
+def boxplot_rta_grouped_scale_p():
+    data_a = []
+    data_b = []
+    data_c = []
+    data_d = []
+
+    m = 4
+    for p in [4, 5, 6, 7, 8]:
+        results = pickle.load(open(basefolder + "exp2/m{}-p{}.p".format(m, p), "rb"))
+
+        task_idx = column(results, 0)
+        R0 = column(results, 1)
+        R_AB = column(results, 2)
+        R_AB_EO = column(results, 3)
+        R_AB_TPDS = column(results, 4)
+        R_TPDS = column(results, 5)
+
+        # R(AB) is bounded to R0
+        max_R0 = 0
+        for i, value in enumerate(R0):
+            if R_AB[i] > value:  R_AB[i] = value
+
+            if value > max_R0:  max_R0 = value
+
+        # R_AB_EO is bounded to R_TPDS
+        for i, value in enumerate(R_TPDS):
+            if R_AB_EO[i] > value:
+                R_AB_EO[i] = value
+
+        # normalise
+        for i, _ in enumerate(R0):
+            scale_value = 7340
+            R0[i] = R0[i] * 1.0 / scale_value
+            R_AB[i] = R_AB[i] * 1.0 / scale_value
+            R_AB_EO[i] = R_AB_EO[i] * 1.0 / scale_value
+            R_TPDS[i] = R_TPDS[i] * 1.0 / scale_value
+            
+        data_a.append(R0)
+        data_b.append(R_AB)
+        data_c.append(R_TPDS)
+        data_d.append(R_AB_EO)
+
+
+    ticks = ['p=4', 'p=5', 'p=6', 'p=7', 'p=8']
+
+    plt.figure()
+
+    bp1 = plt.boxplot(data_a, positions=np.array(range(len(data_a)))*4.0-1.2, sym='', widths=0.6) # patch_artist=True
+    bp2 = plt.boxplot(data_b, positions=np.array(range(len(data_b)))*4.0-0.4, sym='', widths=0.6)
+    bp3 = plt.boxplot(data_c, positions=np.array(range(len(data_c)))*4.0+0.4, sym='', widths=0.6)
+    bp4 = plt.boxplot(data_d, positions=np.array(range(len(data_d)))*4.0+1.2, sym='', widths=0.6)
+
+    set_box_color(bp1, '#e6550d') # colors are from http://colorbrewer2.org/
+    set_box_color(bp2, '#2C7BB6')
+    set_box_color(bp3, '#427526')
+    set_box_color(bp4, '#fdae6b')
+
+    # fill with colors
+    # colors = ['pink', 'lightblue', 'lightgreen']
+    # for bplot in (bp1, bp2, bp3, bp4):
+    #     for patch, color in zip(bplot['boxes'], colors):
+    #         patch.set_facecolor(color)
+            
+    # draw temporary red and blue lines and use them to create a legend
+    plt.plot([], c='#e6550d', label='classic')
+    plt.plot([], c='#2C7BB6', label='rta-cfp')
+    plt.plot([], c='#427526', label='he2019')
+    plt.plot([], c='#fdae6b', label='rta-cfp-eo')
+    plt.legend()
+
+    plt.xticks(range(0, len(ticks) * 4, 4), ticks)
+    #plt.xlim(-2, len(ticks) * 2)
+    #plt.ylim(0, 8)
+    plt.tight_layout()
+    plt.grid(which='major', linestyle=':', linewidth='0.5')
+    plt.show()
+
+
+def boxplot_rta_grouped_scale_L():
+    data_a = []
+    data_b = []
+    data_c = []
+    data_d = []
+
+    m = 4
+    p = 8
+    for L in [0.5, 0.6, 0.7, 0.8, 0.9]:
+        results = pickle.load(open(basefolder + "exp3/m{}-p{}-L{:.2f}.p".format(m, p, L), "rb"))
+
+        task_idx = column(results, 0)
+        R0 = column(results, 1)
+        R_AB = column(results, 2)
+        R_AB_EO = column(results, 3)
+        R_AB_TPDS = column(results, 4)
+        R_TPDS = column(results, 5)
+
+        # R(AB) is bounded to R0
+        max_R0 = 0
+        for i, value in enumerate(R0):
+            if R_AB[i] > value:  R_AB[i] = value
+
+            if value > max_R0:  max_R0 = value
+
+        # R_AB_EO is bounded to R_TPDS
+        for i, value in enumerate(R_TPDS):
+            if R_AB_EO[i] > value:
+                R_AB_EO[i] = value
+
+        # normalise
+        for i, _ in enumerate(R0):
+            scale_value = 7340
+            R0[i] = R0[i] * 1.0 / scale_value
+            R_AB[i] = R_AB[i] * 1.0 / scale_value
+            R_AB_EO[i] = R_AB_EO[i] * 1.0 / scale_value
+            R_TPDS[i] = R_TPDS[i] * 1.0 / scale_value
+            
+        data_a.append(R0)
+        data_b.append(R_AB)
+        data_c.append(R_TPDS)
+        data_d.append(R_AB_EO)
+
+
+    ticks = ['p=0.5', 'p=0.6', 'p=0.7', 'p=0.8', 'p=0.9']
+
+    plt.figure()
+
+    bp1 = plt.boxplot(data_a, positions=np.array(range(len(data_a)))*4.0-1.2, sym='', widths=0.6) # patch_artist=True
+    bp2 = plt.boxplot(data_b, positions=np.array(range(len(data_b)))*4.0-0.4, sym='', widths=0.6)
+    bp3 = plt.boxplot(data_c, positions=np.array(range(len(data_c)))*4.0+0.4, sym='', widths=0.6)
+    bp4 = plt.boxplot(data_d, positions=np.array(range(len(data_d)))*4.0+1.2, sym='', widths=0.6)
+
+    set_box_color(bp1, '#e6550d') # colors are from http://colorbrewer2.org/
+    set_box_color(bp2, '#2C7BB6')
+    set_box_color(bp3, '#427526')
+    set_box_color(bp4, '#fdae6b')
+
+    # fill with colors
+    # colors = ['pink', 'lightblue', 'lightgreen']
+    # for bplot in (bp1, bp2, bp3, bp4):
+    #     for patch, color in zip(bplot['boxes'], colors):
+    #         patch.set_facecolor(color)
+            
+    # draw temporary red and blue lines and use them to create a legend
+    plt.plot([], c='#e6550d', label='classic')
+    plt.plot([], c='#2C7BB6', label='rta-cfp')
+    plt.plot([], c='#427526', label='he2019')
+    plt.plot([], c='#fdae6b', label='rta-cfp-eo')
+    plt.legend()
+
+    plt.xticks(range(0, len(ticks) * 4, 4), ticks)
+    #plt.xlim(-2, len(ticks) * 2)
+    #plt.ylim(0, 8)
+    plt.tight_layout()
+    plt.grid(which='major', linestyle=':', linewidth='0.5')
+    plt.show()
+
+
+def hist_sensitivity_L():
+    data_a = []
+    data_b = []
+    data_c = []
+    data_d = []
+
+    x = []
+    y = []
+    z = []
+
+    # # p = 8 by default
+    # for m in [4]:
+    #     results = pickle.load(open(basefolder + "exp1/m{}.p".format(m), "rb"))
+
+    #     task_idx = column(results, 0)
+    #     R0 = column(results, 1)
+    #     R_AB = column(results, 2)
+    #     R_AB_EO = column(results, 3)
+    #     R_AB_TPDS = column(results, 4)
+    #     R_TPDS = column(results, 5)
+
+    #     for i, value in enumerate(R_TPDS):
+    #         a = R_AB_EO[i]
+    #         b = R_TPDS[i] 
+    #         #if a < b:
+    #         # load task & get L%
+    #         G_dict, C_dict, C_array, lamda, VN_array, L, W = load_task(task_idx[i])
+    #         L_ratio = L * 1.0 / W
+
+    #         diff_percentage = (b - a) * 1.0 / b * 100
+    #         x.append(L_ratio)
+    #         y.append(diff_percentage)
+
+    # results = {}
+    # results["x"] = x
+    # results["y"] = y
+    # pickle.dump(results, open("s-l-m{}.p".format(m), "wb"))
+
+    m = 4
+    results = pickle.load(open(basefolder + "s-l-m{}.p".format(m), "rb"))
+
+    x = results["x"]
+    y = results["y"]
+
+    x_new = []
+    y_new = []
+    for i, j in zip(x,y):
+        if j > 0 and i <= 0.5:
+            x_new.append(i)
+            y_new.append(j)
+
+    plt.figure()
+    #plt.scatter(x, y, marker='o');
+    plt.hist2d(x_new, y_new)
+    plt.xlabel("% of L in W")
+    plt.ylabel("% of improvement")
+    plt.show()
+    
+    return
+
+
+
 def barchart_simu_grouped():
     # y-axis in bold
     rc('font', weight='bold')
@@ -496,7 +710,12 @@ def barchart_simu_grouped():
     bars_G = []
 
     for m in [2, 4, 6, 8]:
-        L, EQ, G = comparison_EO_TPDS(m)
+        # load data (simu)
+        results = pickle.load(open(basefolder + "exp1/m{}.p".format(m), "rb")) # 
+        RTA_EO = column(results, 3)
+        RTA_TPDS = column(results, 4)
+
+        L, EQ, G = comparison_A_B_counting(RTA_EO, RTA_TPDS)
         bars_L.append(L)
         bars_EQ.append(EQ)
         bars_G.append(G)
@@ -509,9 +728,9 @@ def barchart_simu_grouped():
 
     # Names of group and bar width
     names = ['m=2', 'm=4', 'm=6', 'm=8']
-    barWidth = 0.6
 
     # Create brown bars
+    barWidth = 0.6
     plt.bar(r, bars_L, color='#f55442', edgecolor='black', width=barWidth)
     # Create green bars (middle), on top of the firs ones
     #plt.bar(r, bars_EQ, bottom=bars_L, color='#5145f7', edgecolor='black', width=barWidth)
@@ -533,8 +752,12 @@ def barchart_simu_grouped():
 if __name__ == "__main__":
     #rtss_boxplot_rta()
     #rtss_boxplot_simulation()
-
     #comparison_EO_TPDS()
+    
+    #boxplot_rta_grouped_scale_m()
+    #barchart_simu_grouped()
+    #boxplot_rta_grouped_scale_p()
+    boxplot_rta_grouped_scale_L()
+    #hist_sensitivity_L()
 
-    boxplot_rta_grouped()
-    barchart_simu_grouped()
+    

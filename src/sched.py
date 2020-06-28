@@ -256,7 +256,7 @@ if __name__ == "__main__":
     # enable logger
     trace_init(log_to_file = False)
     
-    for m in [2, 4, 6, 8]:
+    for m in [2, 3, 4, 5, 6, 7, 8]:
         R_all = []
 
         for idx in range(1000):
