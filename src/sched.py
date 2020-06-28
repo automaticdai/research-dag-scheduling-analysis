@@ -256,7 +256,7 @@ if __name__ == "__main__":
     # enable logger
     trace_init(log_to_file = False)
     
-    for m in [2, 4, 8, 16]:
+    for m in [2, 4, 6, 8]:
         R_all = []
 
         for idx in range(1000):
@@ -265,14 +265,14 @@ if __name__ == "__main__":
 
             # find the high watermark of random
             R0 = 0
-            for i in range(100):
-                r = sched(dag, number_of_cores = m, algorithm = "random", execution_model = "WCET")
+            for i in range(200):
+                r = sched(dag, number_of_cores=m, algorithm="random", execution_model="WCET")
                 if r > R0:
                     R0 = r
 
-            R1 = sched(dag, number_of_cores = m, algorithm = "eligibility", execution_model = "WCET")
-            R2 = sched(dag, number_of_cores = m, algorithm = "TPDS2019", execution_model = "WCET")
-            R3 = sched(dag, number_of_cores = m, algorithm = "EMSOFT2019", execution_model = "WCET")
+            R1 = sched(dag, number_of_cores=m, algorithm="eligibility", execution_model="WCET")
+            R2 = sched(dag, number_of_cores=m, algorithm="TPDS2019", execution_model="WCET")
+            R3 = sched(dag, number_of_cores=m, algorithm="EMSOFT2019", execution_model="WCET")
 
             R_all.append([R0, R1, R2, R3])
 

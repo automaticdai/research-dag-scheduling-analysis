@@ -23,6 +23,7 @@ def column(matrix, i):
     return [row[i] for row in matrix]
 
 
+# ==============================================================================
 # Bars L: x < y
 # Bars EQ: x = y
 # Bars G: x > y
@@ -186,6 +187,7 @@ def plot_stacked_barchart():
 
     # Show graphic
     plt.show()
+# ==============================================================================
 
 
 def plot_rta():
@@ -244,7 +246,7 @@ def plot_rta():
 
 def rtss_boxplot_rta():
     # load data
-    results = pickle.load(open("m8.p", "rb"))
+    results = pickle.load(open("r_0627_01/m8.p", "rb"))
 
     task_idx = column(results, 0)
     R0 = column(results, 1)
@@ -288,53 +290,6 @@ def rtss_boxplot_rta():
     plt.show()
 
 
-
-    # diff_array = pickle.load(open("m2.p", "rb"))
-    # boxplot_data.append(diff_array)
-    # cm2 = (sum(i > 0  for i in diff_array))
-
-    # diff_array = pickle.load(open("m4.p", "rb"))
-    # boxplot_data.append(diff_array)
-    # cm4 = (sum(i > 0  for i in diff_array))
-
-    # diff_array = pickle.load(open("m6.p", "rb"))
-    # boxplot_data.append(diff_array)
-    # cm6 = (sum(i > 0  for i in diff_array))
-
-    # diff_array = pickle.load(open("m8.p", "rb"))
-    # boxplot_data.append(diff_array)
-    # cm8 = (sum(i > 0  for i in diff_array))
-
-    # plot the boxplot
-
-
-
-    # 
-    # plt.ylabel("Precentage of Improvement (%)")
-
-    # plt.show()
-
-
-
-
-    # plot the bar charts
-    # N = 4
-    # a_means = (1, 2, 3, 4)
-    # b_means = (5, 6, 7, 8)
-
-    # ind = np.arange(N) 
-    # width = 0.35       
-    # plt.bar(ind, a_means, width, label='RTA_new is better')
-    # plt.bar(ind + width, b_means, width, label='RTA_new is not better')
-
-    # plt.ylabel('# of cases')
-    # plt.title('RTA_new compared with RTA_traditional')
-
-    # plt.xticks(ind + width / 2, ('m = 2', 'm = 4', 'm = 6', 'm = 8'))
-    # plt.legend(loc='best')
-    # plt.show()
-
-
 def rtss_boxplot_simulation():
     # load data
     results = pickle.load(open("m2-simu.p", "rb"))
@@ -376,7 +331,7 @@ def rtss_boxplot_simulation():
     plt.show()
 
 
-def comparison():
+def comparison_RTA_Simu():
     # load data (RTA)
     results = pickle.load(open("m2.p", "rb"))
 
@@ -397,12 +352,189 @@ def comparison():
 
     # rta vs simu
     for idx, i in enumerate(task_idx):
-        print(M_EO[i], R0[i], R_AB_EO[i], M_EO[i] <= R_AB[i], M_EO[i] <= R_AB_EO[i])
+        print(M_EO[i], R0[i], R_AB_EO[i], M_EO[i] <= R_AB_EO[i])
 
     # M_EO vs 
+
+
+
+
+
+
+
+
+
+
+def comparison_EO_TPDS(m):
+    # load data (simu)
+    results = pickle.load(open("m{}.p".format(m), "rb")) # 
+
+    RTA_EO = column(results, 3)
+    RTA_TPDS = column(results, 4)
+
+    # rta vs simu
+    count_less = 0
+    count_equal = 0
+    count_larger = 0
+
+    sum_of_diff = 0
+
+    for i in range(1000):
+        a = RTA_EO[i]
+        b = RTA_TPDS[i]
+
+        print(RTA_EO[i] < RTA_TPDS[i])
+        
+        if a < b:
+            count_less = count_less + 1
+            diff = (b-a) * 1.0 / b * 100
+            sum_of_diff = sum_of_diff + diff 
+            print(diff)
+    
+        if a == b:
+            count_equal = count_equal + 1
+        
+        if a > b:
+            count_larger = count_larger + 1
+    
+    print(count_less, count_equal, count_larger)
+    print(sum_of_diff / count_less)
+
+    return count_less, count_equal, count_larger
+
+
+def set_box_color(bp, color):
+    plt.setp(bp['boxes'], color=color)
+    plt.setp(bp['whiskers'], color=color)
+    plt.setp(bp['caps'], color=color)
+    plt.setp(bp['medians'], color=color)
+
+
+def boxplot_rta_grouped():
+    data_a = []
+    data_b = []
+    data_c = []
+    data_d = []
+
+    for m in [2, 4, 6, 8]:
+        results = pickle.load(open("m{}.p".format(m), "rb"))
+
+        task_idx = column(results, 0)
+        R0 = column(results, 1)
+        R_AB = column(results, 2)
+        R_AB_EO = column(results, 3)
+        R_AB_TPDS = column(results, 4)
+        R_TPDS = column(results, 5)
+
+        # R(AB) is bounded to R0
+        max_R0 = 0
+        for i, value in enumerate(R0):
+            if R_AB[i] > value:  R_AB[i] = value
+
+            if value > max_R0:  max_R0 = value
+
+        # R_AB_EO is bounded to R_TPDS
+        for i, value in enumerate(R_TPDS):
+            if R_AB_EO[i] > value:
+                R_AB_EO[i] = value
+
+        # normalise
+        for i, _ in enumerate(R0):
+            scale_value = 7140
+            R0[i] = R0[i] * 1.0 / scale_value
+            R_AB[i] = R_AB[i] * 1.0 / scale_value
+            R_AB_EO[i] = R_AB_EO[i] * 1.0 / scale_value
+            R_TPDS[i] = R_TPDS[i] * 1.0 / scale_value
+            
+        data_a.append(R0)
+        data_b.append(R_AB)
+        data_c.append(R_TPDS)
+        data_d.append(R_AB_EO)
+
+
+    ticks = ['m=2', 'm=4', 'm=6', 'm=8']
+
+    plt.figure()
+
+    bp1 = plt.boxplot(data_a, positions=np.array(range(len(data_a)))*4.0-1.2, sym='', widths=0.6) # patch_artist=True
+    bp2 = plt.boxplot(data_b, positions=np.array(range(len(data_b)))*4.0-0.4, sym='', widths=0.6)
+    bp3 = plt.boxplot(data_c, positions=np.array(range(len(data_c)))*4.0+0.4, sym='', widths=0.6)
+    bp4 = plt.boxplot(data_d, positions=np.array(range(len(data_d)))*4.0+1.2, sym='', widths=0.6)
+
+    set_box_color(bp1, '#e6550d') # colors are from http://colorbrewer2.org/
+    set_box_color(bp2, '#2C7BB6')
+    set_box_color(bp3, '#427526')
+    set_box_color(bp4, '#fdae6b')
+
+    # fill with colors
+    # colors = ['pink', 'lightblue', 'lightgreen']
+    # for bplot in (bp1, bp2, bp3, bp4):
+    #     for patch, color in zip(bplot['boxes'], colors):
+    #         patch.set_facecolor(color)
+            
+    # draw temporary red and blue lines and use them to create a legend
+    plt.plot([], c='#e6550d', label='classic')
+    plt.plot([], c='#2C7BB6', label='rta-cfp')
+    plt.plot([], c='#427526', label='he2019')
+    plt.plot([], c='#fdae6b', label='rta-cfp-eo')
+    plt.legend()
+
+    plt.xticks(range(0, len(ticks) * 4, 4), ticks)
+    #plt.xlim(-2, len(ticks) * 2)
+    #plt.ylim(0, 8)
+    plt.tight_layout()
+    plt.grid(which='major', linestyle=':', linewidth='0.5')
+    plt.show()
+
+
+def barchart_simu_grouped():
+    # y-axis in bold
+    rc('font', weight='bold')
+
+    bars_L = []
+    bars_EQ = []
+    bars_G = []
+
+    for m in [2, 4, 6, 8]:
+        L, EQ, G = comparison_EO_TPDS(m)
+        bars_L.append(L)
+        bars_EQ.append(EQ)
+        bars_G.append(G)
+
+    # Heights of bars1 + bars2
+    bars = np.add(bars_L, bars_EQ).tolist()
+
+    # The position of the bars on the x-axis
+    r = [0, 1, 2, 3]
+
+    # Names of group and bar width
+    names = ['m=2', 'm=4', 'm=6', 'm=8']
+    barWidth = 0.6
+
+    # Create brown bars
+    plt.bar(r, bars_L, color='#f55442', edgecolor='black', width=barWidth)
+    # Create green bars (middle), on top of the firs ones
+    #plt.bar(r, bars_EQ, bottom=bars_L, color='#5145f7', edgecolor='black', width=barWidth)
+    # Create green bars (top)
+    plt.bar(r, bars_G, bottom=bars_L, color='#5145f7', edgecolor='black', width=barWidth)
+
+    # Custom X axis
+    plt.xticks(r, names, fontweight='bold')
+    #plt.xlabel("Method Group")
+    plt.ylabel("Frequency")
+    plt.legend(["EO < He2019", "EO > He2019"])
+
+    plt.grid(which='major', linestyle=':', linewidth='0.5')
+
+    # Show graphic
+    plt.show()
+
 
 if __name__ == "__main__":
     #rtss_boxplot_rta()
     #rtss_boxplot_simulation()
 
-    comparison()
+    #comparison_EO_TPDS()
+
+    boxplot_rta_grouped()
+    barchart_simu_grouped()

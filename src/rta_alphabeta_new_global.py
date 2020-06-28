@@ -932,7 +932,7 @@ def EO_Compute_Length(G, C):
 
 e = 1000000 # this has to be global, or be passed by reference
 
-def EO_iter(G_dict, C_dict, providers, consumers, Prio):
+def EO_iter(G_dict, C_dict, providers, consumers, Prio, G_global):
     global e
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     nodes = []
@@ -980,7 +980,7 @@ def EO_iter(G_dict, C_dict, providers, consumers, Prio):
             # --------------------------------------------------------------------------
             # find the longest local path in theta_i
             # find l(v_i)
-            l, lf, lb = EO_Compute_Length(G_new, C_dict)
+            l, lf, lb = EO_Compute_Length(G_global, C_dict)
 
             lamda_ve = []
 
@@ -992,6 +992,9 @@ def EO_iter(G_dict, C_dict, providers, consumers, Prio):
                     if l[theta_ij] > l_max:
                         l_max = l[theta_ij]
                         ve = theta_ij
+
+            ve = TPDS_max_l_max_lb(l, lb, theta_i)
+
 
             # found ve, then found lamda_ve
             if ve != -1:
@@ -1027,7 +1030,7 @@ def EO_iter(G_dict, C_dict, providers, consumers, Prio):
                 
                 # find new providers and consumers
                 providers_new, consumers_new = find_providers_consumers(G_new, lamda_ve, VN_array)
-                EO_iter(G_new, C_dict, providers_new, consumers_new, Prio)
+                EO_iter(G_new, C_dict, providers_new, consumers_new, Prio, G_global)
                 break
             else:
                 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -1081,7 +1084,8 @@ def Eligiblity_Ordering_PA(G_dict, C_dict):
 
     # --------------------------------------------------------------------------
     # IV. Start iteration
-    EO_iter(G_dict, C_dict, providers, consumers, Prio)
+    G_global = copy.deepcopy(G_dict)
+    EO_iter(G_dict, C_dict, providers, consumers, Prio, G_global)
 
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     for i in Prio:
@@ -1579,10 +1583,13 @@ if __name__ == "__main__":
     #R = rta_alphabeta_new(11, 2, EOPA=True, TPDS=False)
     #exit(0)
 
-    for m in [2, 4, 6, 8]:
+    for m in (2, 4, 8, 16):
         results = []
 
         for task_idx in range(1000):
+
+            task_idx = 3
+
             R0 = rta_np_classic(task_idx, m)
 
             R_AB, alpha, beta = rta_alphabeta_new(task_idx, m, EOPA=False, TPDS=False)
