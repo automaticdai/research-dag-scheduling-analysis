@@ -10,6 +10,7 @@ import networkx as nx
 import copy
 
 from graph import find_longest_path_dfs, find_predecesor, find_successor, find_ancestors, find_descendants, get_subpath_between
+from bisect import bisect_left
 
 
 A_VERY_LARGE_NUMBER = 1000000
@@ -103,44 +104,39 @@ def load_task(task_idx):
     return G_dict, C_dict, C_array, lamda, VN_array, L, W
 
 
-def load_taskset_metadata(taskset_idx):
-    dag_base_folder = "./data-multi-m6-u3.0/"
-
+def load_taskset_metadata(dag_base_folder, taskset_idx):
+    number_of_tasks_in_set = 10
     Taskset = {}
-    Taskset["metadata"] = {}
 
-    for task_idx in range(10):
+    aTau = []
+    aT = []
+    aC = []
+
+    for task_idx in range(number_of_tasks_in_set):
         # << load DAG task <<
         dag_task_file = dag_base_folder + "/{}/Tau_{:d}.gpickle".format(taskset_idx, task_idx)
 
         # task is saved as NetworkX gpickle format
         G = nx.read_gpickle(dag_task_file)
-        
-        Taskset["metadata"]["Prio"] = {}
 
-        Taskset[task_idx] = {}
-        Taskset[task_idx]["T"] = G.graph["T"]
-        Taskset[task_idx]["W"] = G.graph["W"]
-        Taskset[task_idx]["U"] = G.graph["U"]
-        
-    # assign priorities according to RMPO / DMPO
-    aTau = []
-    aT = []
-    aC = []
-
-    for task_idx in range(10):
-        tau = task_idx
-        T = Taskset[task_idx]["T"]
-        C = Taskset[task_idx]["W"]
-
-        for idx, (tauj, Tj, Cj) in enumerate(zip(aTau, aT, aC)):
-            pass
-            #aTau.insert(tau)
-
-        #Taskset[task_idx]["Prio"] 
-
-
+        Ti = G.graph["T"]
+        Wi = G.graph["W"]
+        Ui = G.graph["U"]
     
+        ############################################################################
+        # assign priorities according to RMPO / DMPO
+        idx = bisect_left(aT, Ti)
+
+        aTau.insert(idx, task_idx)
+        aT.insert(idx, Ti)
+        aC.insert(idx, Wi)
+
+    for i, task_idx in enumerate(aTau):
+        Taskset[i] = {}
+        Taskset[i]["tau"] = aTau[i]
+        Taskset[i]["T"] = aT[i]
+        Taskset[i]["C"] = aC[i]
+
     return Taskset
 
 
@@ -1290,32 +1286,69 @@ def Eligiblity_Ordering_PA_legacy(G_dict, C_dict):
 
 ################################################################################
 ################################################################################
-def rta_schedulability_test(taskset_idx, m):
+def rta_multi_calc_R_diamond(Taskset, R_i, max_Rj, hp, R_KEY):
+    R_diamond = R_i
+    R_diamond_new = 0
+
+    iter_max = 100
+
+    while abs(R_diamond_new - R_diamond) > 1:
+        R_diamond = R_diamond_new
+        sum_R_hp = 0
+        for j in hp:
+            sum_R_hp = sum_R_hp + math.ceil(R_diamond * 1.0 / Taskset[j]["T"]) * Taskset[j][R_KEY] 
+
+        R_diamond_new = R_i + max_Rj + sum_R_hp 
+
+    return R_diamond
+
+
+def rta_schedulability_test(m):
     """ rta for multi-DAGs
     """
+    u = 3.0
+    dag_base_folder = "./data-multi-m6-u{:.1f}/".format(u)
 
-    taskset = load_taskset_metadata(taskset_idx)
+    taskset_idx = 1 # taskset from 0 to 999
+    Taskset = load_taskset_metadata(dag_base_folder, taskset_idx)
 
+    # the first iteration is to collect all response times
+    for i in Taskset:
+        # solve task response times
+        task_idx = Taskset[i]["tau"]
+        R_i_EO, _, _ = rta_alphabeta_new(task_idx, m, EOPA=True, TPDS=False)
+        R_i_TPDS = TPDS_rta(task_idx, m)
+        Taskset[i]["R_i_EO"] = R_i_EO
+        Taskset[i]["R_i_TPDS"] = R_i_TPDS
 
+    # # (R_i_EO) the second iteration is to work out all the WCRTs
+    R_kEY = "R_i_EO"
+    for i in Taskset:
+        Taskset[i]["R_i"] = Taskset[i][R_kEY]
+        D_i = Taskset[i]["T"]
 
-    task = [G_i, C_i, T_i, P_i]
+        # get higher prioirty taskset
+        hp = []
+        for j in range(i):
+            hp.append(j)
 
-    # load taskset
+        # get the maximum Rj in lp(i)
+        max_Rj = 0
+        if i < len(Taskset) - 1:
+            for j in range(i+1, len(Taskset)):
+                if Taskset[j][R_kEY] > max_Rj: 
+                    max_Rj = Taskset[j][R_kEY]
 
-    # solve task response time
-    R_i_EO = rta_alphabeta_new(task_idx, m, EOPA=True, TPDS=False)
-    R_i_TPDS = rta_
-
-    for i in taskset:
-        R_diamod = 0
-        D_i = T_i
-
-        if (R_diamod > D_i):
-            # even one deadline miss means unschedulable
-
+        # calculate the response time
+        R_diamond = rta_multi_calc_R_diamond(Taskset, R_i_EO, max_Rj, hp, R_kEY)
+        
+        # even one deadline miss means unschedulable
+        if (R_diamond > D_i):
+            print("Not schedulable!")
             return False
-
+    
     # no deadline miss means taskset is schedulable
+    print("Bingo!")
     return True
 
 
@@ -1734,5 +1767,5 @@ if __name__ == "__main__":
             pickle.dump(results, open("m{}-p{}-L{:.2f}.p".format(m,p,L), "wb"))
     elif exp == 4:
         m = 6
-        rta_schedulability_test(0, m)
+        rta_schedulability_test(m)
 

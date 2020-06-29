@@ -419,7 +419,7 @@ def boxplot_rta_grouped_scale_m():
     data_d = []
 
     for m in [2, 4, 6, 7, 8]:
-        results = pickle.load(open(basefolder + "m{}.p".format(m), "rb"))
+        results = pickle.load(open(basefolder + "exp1/m{}.p".format(m), "rb"))
 
         task_idx = column(results, 0)
         R0 = column(results, 1)
@@ -503,6 +503,7 @@ def barchart_simu_grouped():
         results = pickle.load(open(basefolder + "exp1/m{}.p".format(m), "rb")) # 
         R_AB_EO = column(results, 3)
         R_AB_TPDS = column(results, 4)
+        R_TPDS = column(results, 5)
         
         L, EQ, G = comparison_A_B_counting(R_AB_EO, R_AB_TPDS)
 
@@ -818,10 +819,10 @@ if __name__ == "__main__":
     
     # RTSS experiments
     # exp 1
-    #boxplot_rta_grouped_scale_m()
+    boxplot_rta_grouped_scale_m()
 
     # exp 1-2
-    barchart_simu_grouped()
+    #barchart_simu_grouped()
     
     # exp 2
     #boxplot_rta_grouped_scale_p()
