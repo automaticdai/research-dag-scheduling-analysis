@@ -7,6 +7,7 @@
 # University of York, UK
 
 import math
+import random, statistics
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -17,11 +18,23 @@ import networkx as nx
 
 from graph import find_longest_path_dfs, find_predecesor, find_successor, get_subpath_between
 from rta_alphabeta_new import rta_np_classic, load_task
+from VD_A import VD_A
+
+
+color_set = ['black', 'pink', 'lightblue', 'lightgreen']
 
 
 # return the column of a 2D array
 def column(matrix, i):
     return [row[i] for row in matrix]
+
+
+# set box color of a boxplot
+def set_box_color(bp, color):
+    plt.setp(bp['boxes'], color=color)
+    plt.setp(bp['whiskers'], color=color)
+    plt.setp(bp['caps'], color=color)
+    plt.setp(bp['medians'], color=color)
 
 
 # ==============================================================================
@@ -393,18 +406,12 @@ def comparison_A_B_counting(A, B):
             count_larger = count_larger + 1
     
     #print(count_less, count_equal, count_larger)
-    print(sum(advantage_cases) / len(advantage_cases), max(advantage_cases), min(advantage_cases))
+    #print("{:.2f} {:.2f} {:.2f}".format((sum(advantage_cases) / len(advantage_cases)), (max(advantage_cases)), (min(advantage_cases))))
 
     return count_less, count_equal, count_larger
 
 
-def set_box_color(bp, color):
-    plt.setp(bp['boxes'], color=color)
-    plt.setp(bp['whiskers'], color=color)
-    plt.setp(bp['caps'], color=color)
-    plt.setp(bp['medians'], color=color)
-
-
+# for exp 1
 def boxplot_rta_grouped_scale_m():
     data_a = []
     data_b = []
@@ -469,9 +476,9 @@ def boxplot_rta_grouped_scale_m():
             
     # draw temporary red and blue lines and use them to create a legend
     plt.plot([], c='#e6550d', label='classic')
-    plt.plot([], c='#2C7BB6', label='rta-cfp')
+    plt.plot([], c='#2C7BB6', label='rta-cpf')
     plt.plot([], c='#427526', label='he2019')
-    plt.plot([], c='#fdae6b', label='rta-cfp-eo')
+    plt.plot([], c='#fdae6b', label='rta-cpf-eo')
     plt.legend()
 
     plt.xticks(range(0, len(ticks) * 4, 4), ticks)
@@ -482,6 +489,133 @@ def boxplot_rta_grouped_scale_m():
     plt.show()
 
 
+# for exp 1-2
+def barchart_simu_grouped():
+    # y-axis in bold
+    rc('font', weight='bold')
+
+    bars_L = []
+    bars_EQ = []
+    bars_G = []
+
+    for m in [2, 4, 6, 7, 8]:
+        # load data (simu)
+        results = pickle.load(open(basefolder + "exp1/m{}.p".format(m), "rb")) # 
+        R_AB_EO = column(results, 3)
+        R_AB_TPDS = column(results, 4)
+        
+        L, EQ, G = comparison_A_B_counting(R_AB_EO, R_AB_TPDS)
+
+        # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+        set_A = R_AB_EO
+        set_B = R_AB_TPDS
+        estimate, magnitude = VD_A(set_A, set_B)
+        print(len(set_A), estimate, magnitude)
+
+        set_A = []
+        set_B = []
+        for i, j in zip(R_AB_EO,R_AB_TPDS):
+            if i < j:
+                set_A.append(i)
+                set_B.append(j) 
+        estimate, magnitude = VD_A(set_A, set_B)
+        print(len(set_A), estimate, magnitude)
+
+        set_A = []
+        set_B = []
+        for i, j in zip(R_AB_EO,R_AB_TPDS):
+            if i > j:
+                set_A.append(i)
+                set_B.append(j) 
+        estimate, magnitude = VD_A(set_A, set_B)
+        print(len(set_A), estimate, magnitude)
+        # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+        #stacked_plots(R_AB_EO, R_AB_TPDS)
+
+        bars_L.append(L)
+        bars_EQ.append(EQ)
+        bars_G.append(G)
+
+    # Heights of bars1 + bars2
+    bars = np.add(bars_L, bars_EQ).tolist()
+
+    # The position of the bars on the x-axis
+    r = [0, 1, 2, 3, 4]
+    
+    # Names of group and bar width
+    names = ['m=2', 'm=4', 'm=6', 'm=7', 'm=8']
+
+    # Create brown bars
+    barWidth = 0.6
+    plt.bar(r, bars_L, color='#f55442', edgecolor='black', width=barWidth)
+    # Create green bars (middle), on top of the firs ones
+    #plt.bar(r, bars_EQ, bottom=bars_L, color='#5145f7', edgecolor='black', width=barWidth)
+    # Create green bars (top)
+    plt.bar(r, bars_G, bottom=bars_L, color='#5145f7', edgecolor='black', width=barWidth)
+
+    # Custom X axis
+    plt.xticks(r, names, fontweight='bold')
+    #plt.xlabel("Method Group")
+    plt.ylabel("Frequency")
+    plt.legend(["EO < He2019", "EO > He2019"])
+
+    plt.grid(which='major', linestyle=':', linewidth='0.5')
+
+    # Show graphic
+    plt.show()
+
+
+def stacked_plots (A, B):
+  overall_effect_size = []
+  number_of_trails = 1000
+  for trial_index in range(number_of_trails):
+    # I don't quite follow your data list formats
+    # I am assuming A[trial_index] would give me the response times for method A from trial "trial_index"
+    N = len (A[trial_index])
+    M = len (B[trial_index])
+    overall_effect_size = []
+    no_of_samples = min (N, M)
+    if no_of_samples != 0:
+        estimate, magnitude = VD_A (random.sample (A[trial_index], no_of_samples), random.sample (B[trial_index], no_of_samples))
+        effect_size = [[0]*8]    
+        if statistics.median (A[trial_index]) < statistics.median (B[trial_index]):
+            offset = 0
+        else:
+            offset = 4
+        if (magnitude == "negligible"):
+            effect_size[0+offset] += 1 # number of times i is better
+        if magnitude == "small":
+            effect_size[1+offset] += 1 # number of times i is better
+        if magnitude == "medium":
+            effect_size[2+offset] += 1 # number of times i is better
+        if magnitude == "large":
+            effect_size[3+offset] += 1 # number of times i is better
+        overall_effect_size.append(effect_size)
+    
+    # Here you probably need to convert overall_effect to item
+    # I can't quite remember how it works but something like the follow will probably work
+    # obviously the above could be simplified
+    item = [[0]*8] 
+    for effect_size in overall_effect_size:
+        for index in range(8):
+            item[index].append (effect_size[item])    
+    objects = ("negligible effect", "small effect", "medium effect", "larger effect")
+    y_pos = [1,2,3,4]
+    plt.figure ()
+    plt.yscale (y_scale)
+    plt.xticks (y_pos, objects, rotation=90)
+    plt.ylabel ("Frequency")
+    plt.title (context)
+    plt.bar (y_pos, item[0:3], align='center', alpha=0.5, color='r', label="X>Y")
+    plt.bar (y_pos, item[4:], align='center', alpha=0.5, bottom=item[0:3], color='b', label="X<Y") 
+    plt.legend(loc="upper left")        
+    filename = "test.png"
+    plt.savefig (filename, bbox_inches = "tight")
+    plt.close ()
+
+
+# for exp 2
 def boxplot_rta_grouped_scale_p():
     data_a = []
     data_b = []
@@ -547,9 +681,9 @@ def boxplot_rta_grouped_scale_p():
             
     # draw temporary red and blue lines and use them to create a legend
     plt.plot([], c='#e6550d', label='classic')
-    plt.plot([], c='#2C7BB6', label='rta-cfp')
+    plt.plot([], c='#2C7BB6', label='rta-cpf')
     plt.plot([], c='#427526', label='he2019')
-    plt.plot([], c='#fdae6b', label='rta-cfp-eo')
+    plt.plot([], c='#fdae6b', label='rta-cpf-eo')
     plt.legend()
 
     plt.xticks(range(0, len(ticks) * 4, 4), ticks)
@@ -560,6 +694,7 @@ def boxplot_rta_grouped_scale_p():
     plt.show()
 
 
+# for exp 3
 def boxplot_rta_grouped_scale_L():
     data_a = []
     data_b = []
@@ -568,7 +703,7 @@ def boxplot_rta_grouped_scale_L():
 
     m = 4
     p = 8
-    for L in [0.5, 0.6, 0.7, 0.8, 0.9]:
+    for L in [0.6, 0.7, 0.8, 0.9]:
         results = pickle.load(open(basefolder + "exp3/m{}-p{}-L{:.2f}.p".format(m, p, L), "rb"))
 
         task_idx = column(results, 0)
@@ -581,9 +716,11 @@ def boxplot_rta_grouped_scale_L():
         # R(AB) is bounded to R0
         max_R0 = 0
         for i, value in enumerate(R0):
-            if R_AB[i] > value:  R_AB[i] = value
+            if R_AB[i] > value:
+                R_AB[i] = value
 
-            if value > max_R0:  max_R0 = value
+            if value > max_R0:
+                max_R0 = value
 
         # R_AB_EO is bounded to R_TPDS
         for i, value in enumerate(R_TPDS):
@@ -592,7 +729,7 @@ def boxplot_rta_grouped_scale_L():
 
         # normalise
         for i, _ in enumerate(R0):
-            scale_value = 7340
+            scale_value = 1
             R0[i] = R0[i] * 1.0 / scale_value
             R_AB[i] = R_AB[i] * 1.0 / scale_value
             R_AB_EO[i] = R_AB_EO[i] * 1.0 / scale_value
@@ -604,7 +741,7 @@ def boxplot_rta_grouped_scale_L():
         data_d.append(R_AB_EO)
 
 
-    ticks = ['p=0.5', 'p=0.6', 'p=0.7', 'p=0.8', 'p=0.9']
+    ticks = ['L=0.6', 'L=0.7', 'L=0.8', 'L=0.9']
 
     plt.figure()
 
@@ -626,9 +763,9 @@ def boxplot_rta_grouped_scale_L():
             
     # draw temporary red and blue lines and use them to create a legend
     plt.plot([], c='#e6550d', label='classic')
-    plt.plot([], c='#2C7BB6', label='rta-cfp')
+    plt.plot([], c='#2C7BB6', label='rta-cpf')
     plt.plot([], c='#427526', label='he2019')
-    plt.plot([], c='#fdae6b', label='rta-cfp-eo')
+    plt.plot([], c='#fdae6b', label='rta-cpf-eo')
     plt.legend()
 
     plt.xticks(range(0, len(ticks) * 4, 4), ticks)
@@ -639,6 +776,7 @@ def boxplot_rta_grouped_scale_L():
     plt.show()
 
 
+# for exp 4: sensitivity
 def hist_sensitivity_L():
     data_a = []
     data_b = []
@@ -648,34 +786,6 @@ def hist_sensitivity_L():
     x = []
     y = []
     z = []
-
-    # # p = 8 by default
-    # for m in [4]:
-    #     results = pickle.load(open(basefolder + "exp1/m{}.p".format(m), "rb"))
-
-    #     task_idx = column(results, 0)
-    #     R0 = column(results, 1)
-    #     R_AB = column(results, 2)
-    #     R_AB_EO = column(results, 3)
-    #     R_AB_TPDS = column(results, 4)
-    #     R_TPDS = column(results, 5)
-
-    #     for i, value in enumerate(R_TPDS):
-    #         a = R_AB_EO[i]
-    #         b = R_TPDS[i] 
-    #         #if a < b:
-    #         # load task & get L%
-    #         G_dict, C_dict, C_array, lamda, VN_array, L, W = load_task(task_idx[i])
-    #         L_ratio = L * 1.0 / W
-
-    #         diff_percentage = (b - a) * 1.0 / b * 100
-    #         x.append(L_ratio)
-    #         y.append(diff_percentage)
-
-    # results = {}
-    # results["x"] = x
-    # results["y"] = y
-    # pickle.dump(results, open("s-l-m{}.p".format(m), "wb"))
 
     m = 4
     results = pickle.load(open(basefolder + "s-l-m{}.p".format(m), "rb"))
@@ -695,58 +805,10 @@ def hist_sensitivity_L():
     plt.hist2d(x_new, y_new)
     plt.xlabel("% of L in W")
     plt.ylabel("% of improvement")
+    plt.colorbar()
     plt.show()
     
     return
-
-
-
-def barchart_simu_grouped():
-    # y-axis in bold
-    rc('font', weight='bold')
-
-    bars_L = []
-    bars_EQ = []
-    bars_G = []
-
-    for m in [2, 4, 6, 8]:
-        # load data (simu)
-        results = pickle.load(open(basefolder + "exp1/m{}.p".format(m), "rb")) # 
-        RTA_EO = column(results, 3)
-        RTA_TPDS = column(results, 4)
-
-        L, EQ, G = comparison_A_B_counting(RTA_EO, RTA_TPDS)
-        bars_L.append(L)
-        bars_EQ.append(EQ)
-        bars_G.append(G)
-
-    # Heights of bars1 + bars2
-    bars = np.add(bars_L, bars_EQ).tolist()
-
-    # The position of the bars on the x-axis
-    r = [0, 1, 2, 3]
-
-    # Names of group and bar width
-    names = ['m=2', 'm=4', 'm=6', 'm=8']
-
-    # Create brown bars
-    barWidth = 0.6
-    plt.bar(r, bars_L, color='#f55442', edgecolor='black', width=barWidth)
-    # Create green bars (middle), on top of the firs ones
-    #plt.bar(r, bars_EQ, bottom=bars_L, color='#5145f7', edgecolor='black', width=barWidth)
-    # Create green bars (top)
-    plt.bar(r, bars_G, bottom=bars_L, color='#5145f7', edgecolor='black', width=barWidth)
-
-    # Custom X axis
-    plt.xticks(r, names, fontweight='bold')
-    #plt.xlabel("Method Group")
-    plt.ylabel("Frequency")
-    plt.legend(["EO < He2019", "EO > He2019"])
-
-    plt.grid(which='major', linestyle=':', linewidth='0.5')
-
-    # Show graphic
-    plt.show()
 
 
 if __name__ == "__main__":
@@ -754,10 +816,18 @@ if __name__ == "__main__":
     #rtss_boxplot_simulation()
     #comparison_EO_TPDS()
     
+    # RTSS experiments
+    # exp 1
     #boxplot_rta_grouped_scale_m()
-    #barchart_simu_grouped()
-    #boxplot_rta_grouped_scale_p()
-    boxplot_rta_grouped_scale_L()
-    #hist_sensitivity_L()
 
+    # exp 1-2
+    barchart_simu_grouped()
     
+    # exp 2
+    #boxplot_rta_grouped_scale_p()
+    
+    # exp 3
+    #boxplot_rta_grouped_scale_L()
+    
+    # exp 4
+    #hist_sensitivity_L()

@@ -12,7 +12,9 @@ r_0628_01:
   - m = 6
   - p = ?%
   - *L = 50% - 90%
-- exp4: multi-DAG 
+- exp4: multi-DAG
+  - m = 6
+  - U = {0.5- 1.0} * m 
 - dataset
   - data-generic: no constraint on P
   - data-p*: parallelism = P

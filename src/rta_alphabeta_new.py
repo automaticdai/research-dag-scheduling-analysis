@@ -11,6 +11,9 @@ import copy
 
 from graph import find_longest_path_dfs, find_predecesor, find_successor, find_ancestors, find_descendants, get_subpath_between
 
+
+A_VERY_LARGE_NUMBER = 1000000
+
 def print_debug(*args, **kw):
     #print(args)
     pass
@@ -98,6 +101,50 @@ def load_task(task_idx):
 
     # >> end of load DAG task >>
     return G_dict, C_dict, C_array, lamda, VN_array, L, W
+
+
+def load_taskset_metadata(taskset_idx):
+    dag_base_folder = "./data-multi-m6-u3.0/"
+
+    Taskset = {}
+    Taskset["metadata"] = {}
+
+    for task_idx in range(10):
+        # << load DAG task <<
+        dag_task_file = dag_base_folder + "/{}/Tau_{:d}.gpickle".format(taskset_idx, task_idx)
+
+        # task is saved as NetworkX gpickle format
+        G = nx.read_gpickle(dag_task_file)
+        
+        Taskset["metadata"]["Prio"] = {}
+
+        Taskset[task_idx] = {}
+        Taskset[task_idx]["T"] = G.graph["T"]
+        Taskset[task_idx]["W"] = G.graph["W"]
+        Taskset[task_idx]["U"] = G.graph["U"]
+        
+    # assign priorities according to RMPO / DMPO
+    aTau = []
+    aT = []
+    aC = []
+
+    for task_idx in range(10):
+        tau = task_idx
+        T = Taskset[task_idx]["T"]
+        C = Taskset[task_idx]["W"]
+
+        for idx, (tauj, Tj, Cj) in enumerate(zip(aTau, aT, aC)):
+            pass
+            #aTau.insert(tau)
+
+        #Taskset[task_idx]["Prio"] 
+
+
+    
+    return Taskset
+
+
+#load_taskset_metadata(0)
 
 
 def remove_nodes_in_list(nodes, nodes_to_remove):
@@ -319,7 +366,7 @@ def rta_alphabeta_new(task_idx, m, EOPA=False, TPDS=False):
         Prio = TPDS_Ordering_PA(G_dict, C_dict)
         # reverse the order
         for i in Prio:
-            Prio[i] = 10000 - Prio[i]
+            Prio[i] = A_VERY_LARGE_NUMBER - Prio[i]
         print_debug("Prioirties", Prio)
 
     # ==========================================================================
@@ -964,7 +1011,7 @@ def EO_Compute_Length(G, C):
     return l, lf, lb
 
 
-e = 1000000 # this has to be global, or be passed by reference
+e = A_VERY_LARGE_NUMBER # this has to be global, or be passed by reference
 
 def EO_iter(G_dict, C_dict, providers, consumers, Prio):
     global e
@@ -1130,7 +1177,7 @@ def Eligiblity_Ordering_PA_legacy(G_dict, C_dict):
     """ The Eligibility Ordering priority assignment
     """
     Prio = {}
-    E_MAX = 1000000
+    E_MAX = A_VERY_LARGE_NUMBER
 
     # --------------------------------------------------------------------------
     # I. load task parameters
@@ -1243,13 +1290,21 @@ def Eligiblity_Ordering_PA_legacy(G_dict, C_dict):
 
 ################################################################################
 ################################################################################
-def rta_np_multi(taskset):
+def rta_schedulability_test(taskset_idx, m):
     """ rta for multi-DAGs
     """
+
+    taskset = load_taskset_metadata(taskset_idx)
+
+
+
     task = [G_i, C_i, T_i, P_i]
 
+    # load taskset
+
     # solve task response time
-    R_i = rta_alphabeta_new()
+    R_i_EO = rta_alphabeta_new(task_idx, m, EOPA=True, TPDS=False)
+    R_i_TPDS = rta_
 
     for i in taskset:
         R_diamod = 0
@@ -1477,7 +1532,7 @@ def TPDS_Ordering_PA(G, C):
     return prio
 
 
-def TPDS_rta(task_idx, M):
+def TPDS_rta(task_idx, m):
     """ Response time analysis in: 
     Qingqiang He, et. al, Intra-Task Priority Assignment in Real-Time Scheduling of DAG Tasks on Multi-cores, 2019
     """
@@ -1613,11 +1668,12 @@ if __name__ == "__main__":
     #R = rta_alphabeta_new(11, 2, EOPA=True, TPDS=False)
     #exit(0)
 
-    exp = 3
+    # Experiments for RTSS 2020
     # exp 1: RTA
     # exp 2: scale p
     # exp 3: scale L
     # exp 4: multi-DAG
+    exp = 4
 
     if exp == 1:
         # exp 1
@@ -1677,4 +1733,6 @@ if __name__ == "__main__":
             
             pickle.dump(results, open("m{}-p{}-L{:.2f}.p".format(m,p,L), "wb"))
     elif exp == 4:
-        pass
+        m = 6
+        rta_schedulability_test(0, m)
+
