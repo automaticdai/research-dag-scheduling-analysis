@@ -4,3 +4,5 @@ data*/
 .vscode/
 *.log
 *.p
+*.pdf
+*.ods

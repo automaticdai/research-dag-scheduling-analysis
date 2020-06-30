@@ -104,7 +104,7 @@ def load_task(task_idx):
     return G_dict, C_dict, C_array, lamda, VN_array, L, W
 
 
-def load_taskset_metadata(dag_base_folder, taskset_idx):
+def load_taskset_metadata(dag_base_folder):
     number_of_tasks_in_set = 10
     Taskset = {}
 
@@ -114,7 +114,7 @@ def load_taskset_metadata(dag_base_folder, taskset_idx):
 
     for task_idx in range(number_of_tasks_in_set):
         # << load DAG task <<
-        dag_task_file = dag_base_folder + "/{}/Tau_{:d}.gpickle".format(taskset_idx, task_idx)
+        dag_task_file = dag_base_folder + "/Tau_{:d}.gpickle".format(task_idx)
 
         # task is saved as NetworkX gpickle format
         G = nx.read_gpickle(dag_task_file)
@@ -138,9 +138,6 @@ def load_taskset_metadata(dag_base_folder, taskset_idx):
         Taskset[i]["C"] = aC[i]
 
     return Taskset
-
-
-#load_taskset_metadata(0)
 
 
 def remove_nodes_in_list(nodes, nodes_to_remove):
@@ -1290,15 +1287,21 @@ def rta_multi_calc_R_diamond(Taskset, R_i, max_Rj, hp, R_KEY):
     R_diamond = R_i
     R_diamond_new = 0
 
+    iteration = 0
     iter_max = 100
 
-    while abs(R_diamond_new - R_diamond) > 1:
+    while abs(R_diamond_new - R_diamond) > 5:
         R_diamond = R_diamond_new
         sum_R_hp = 0
         for j in hp:
             sum_R_hp = sum_R_hp + math.ceil(R_diamond * 1.0 / Taskset[j]["T"]) * Taskset[j][R_KEY] 
 
-        R_diamond_new = R_i + max_Rj + sum_R_hp 
+        R_diamond_new = R_i + max_Rj + sum_R_hp
+
+        iteration = iteration + 1
+        if iteration > iter_max:
+            print("Overflow!")
+            break
 
     return R_diamond
 
@@ -1306,50 +1309,142 @@ def rta_multi_calc_R_diamond(Taskset, R_i, max_Rj, hp, R_KEY):
 def rta_schedulability_test(m):
     """ rta for multi-DAGs
     """
-    u = 3.0
-    dag_base_folder = "./data-multi-m6-u{:.1f}/".format(u)
-
-    taskset_idx = 1 # taskset from 0 to 999
-    Taskset = load_taskset_metadata(dag_base_folder, taskset_idx)
-
-    # the first iteration is to collect all response times
-    for i in Taskset:
-        # solve task response times
-        task_idx = Taskset[i]["tau"]
-        R_i_EO, _, _ = rta_alphabeta_new(task_idx, m, EOPA=True, TPDS=False)
-        R_i_TPDS = TPDS_rta(task_idx, m)
-        Taskset[i]["R_i_EO"] = R_i_EO
-        Taskset[i]["R_i_TPDS"] = R_i_TPDS
-
-    # # (R_i_EO) the second iteration is to work out all the WCRTs
-    R_kEY = "R_i_EO"
-    for i in Taskset:
-        Taskset[i]["R_i"] = Taskset[i][R_kEY]
-        D_i = Taskset[i]["T"]
-
-        # get higher prioirty taskset
-        hp = []
-        for j in range(i):
-            hp.append(j)
-
-        # get the maximum Rj in lp(i)
-        max_Rj = 0
-        if i < len(Taskset) - 1:
-            for j in range(i+1, len(Taskset)):
-                if Taskset[j][R_kEY] > max_Rj: 
-                    max_Rj = Taskset[j][R_kEY]
-
-        # calculate the response time
-        R_diamond = rta_multi_calc_R_diamond(Taskset, R_i_EO, max_Rj, hp, R_kEY)
-        
-        # even one deadline miss means unschedulable
-        if (R_diamond > D_i):
-            print("Not schedulable!")
-            return False
+    global dag_base_folder
     
-    # no deadline miss means taskset is schedulable
-    print("Bingo!")
-    return True
+    u = 3.9
+    RND_sched_count = 0
+    EO_sched_count = 0
+    TPDS_sched_count = 0
+
+    for taskset_idx in range(1000): # taskset from 0 to 999
+        print("----------")
+        print("Taskset:", taskset_idx) 
+        dag_base_folder = "./data-multi-m6-u{:.1f}/{}/".format(u, taskset_idx)
+        Taskset = load_taskset_metadata(dag_base_folder)
+        # print(Taskset)
+
+        # the first iteration is to collect all response times
+        for i in Taskset:
+            # solve task response times
+            task_idx = Taskset[i]["tau"]
+            R_i_random = rta_np_classic(task_idx, m)
+            R_i_EO, _, _ = rta_alphabeta_new(task_idx, m, EOPA=True, TPDS=False)
+            R_i_TPDS = TPDS_rta(task_idx, m)
+            Taskset[i]["R_i_random"] = R_i_random
+            Taskset[i]["R_i_EO"] = R_i_EO
+            Taskset[i]["R_i_TPDS"] = R_i_TPDS
+
+        # # (R_i_random) the second iteration is to work out all the WCRTs
+        R_key = "R_i_random"
+        schedualbe = True
+        for i in Taskset:
+            Taskset[i]["R_i"] = Taskset[i][R_key]
+            D_i = Taskset[i]["T"]
+
+            # get higher prioirty taskset
+            hp = []
+            for j in range(i):
+                hp.append(j)
+
+            # get the maximum Rj in lp(i)
+            max_Rj = 0
+            if i < len(Taskset) - 1:
+                for j in range(i+1, len(Taskset)):
+                    if Taskset[j][R_key] > max_Rj: 
+                        max_Rj = Taskset[j][R_key]
+
+            # calculate the response time
+            max_Rj = 0
+            R_diamond = rta_multi_calc_R_diamond(Taskset, R_i_EO, max_Rj, hp, R_key)
+            
+            # even one deadline miss means unschedulable
+            if (R_diamond > D_i):
+                schedualbe = False
+
+        if schedualbe:
+            # no deadline miss means taskset is schedulable
+            #print("Schedulable!")
+            RND_sched_count = RND_sched_count + 1
+        else:
+            pass
+            #print("Not schedulable!")
+
+        print(RND_sched_count)
+
+        # (R_i_EO) the second iteration is to work out all the WCRTs
+        R_key = "R_i_EO"
+        schedualbe = True
+        for i in Taskset:
+            Taskset[i]["R_i"] = Taskset[i][R_key]
+            D_i = Taskset[i]["T"]
+
+            # get higher prioirty taskset
+            hp = []
+            for j in range(i):
+                hp.append(j)
+
+            # get the maximum Rj in lp(i)
+            max_Rj = 0
+            if i < len(Taskset) - 1:
+                for j in range(i+1, len(Taskset)):
+                    if Taskset[j][R_key] > max_Rj: 
+                        max_Rj = Taskset[j][R_key]
+
+            # calculate the response time
+            max_Rj = 0
+            R_diamond = rta_multi_calc_R_diamond(Taskset, R_i_EO, max_Rj, hp, R_key)
+            
+            # even one deadline miss means unschedulable
+            if (R_diamond > D_i):
+                schedualbe = False
+
+        if schedualbe:
+            # no deadline miss means taskset is schedulable
+            #print("Schedulable!")
+            EO_sched_count = EO_sched_count + 1
+        else:
+            pass
+            #print("Not schedulable!")
+
+        print(EO_sched_count)
+
+
+        # (R_i_EO) the second iteration is to work out all the WCRTs
+        R_key = "R_i_TPDS"
+        schedualbe = True
+        for i in Taskset:
+            Taskset[i]["R_i"] = Taskset[i][R_key]
+            D_i = Taskset[i]["T"]
+
+            # get higher prioirty taskset
+            hp = []
+            for j in range(i):
+                hp.append(j)
+
+            # get the maximum Rj in lp(i)
+            max_Rj = 0
+            if i < len(Taskset) - 1:
+                for j in range(i+1, len(Taskset)):
+                    if Taskset[j][R_key] > max_Rj: 
+                        max_Rj = Taskset[j][R_key]
+
+            # calculate the response time
+            max_Rj = 0
+            R_diamond = rta_multi_calc_R_diamond(Taskset, R_i_EO, max_Rj, hp, R_key)
+            
+            # even one deadline miss means unschedulable
+            if (R_diamond > D_i):
+                schedualbe = False
+
+        if schedualbe:
+            # no deadline miss means taskset is schedulable
+            #print("Schedulable!")
+            TPDS_sched_count = TPDS_sched_count + 1
+        else:
+            pass
+            #print("Not schedulable!")
+
+        print(TPDS_sched_count)
 
 
 ################################################################################
