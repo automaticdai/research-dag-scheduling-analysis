@@ -457,8 +457,8 @@ def boxplot_rta_grouped_scale_m():
     #plt.ylim(0, 8)
     plt.tight_layout()
     fig = plt.gcf()
-    fig.set_size_inches(6.0, 3.0)
-    plt.grid(which='major', linestyle=':', linewidth='0.5')
+    fig.set_size_inches(6.5, 3.0)
+    plt.grid(which='major', axis='y', linestyle=':', linewidth='0.5')
     plt.savefig("exp-rta-scale-m.pdf")
     plt.show()
 
@@ -519,7 +519,7 @@ def boxplot_rta_grouped_scale_p():
     data_c = []
     data_d = []
 
-    m = 6
+    m = 4
     for p in [4, 5, 6, 7, 8]:
         results = pickle.load(open(basefolder + "exp2/m{}-p{}.p".format(m, p), "rb"))
 
@@ -544,7 +544,7 @@ def boxplot_rta_grouped_scale_p():
 
         # normalise
         for i, _ in enumerate(R0):
-            scale_value = 7340 # 7580, 7340
+            scale_value = 7580 # 7580, 7340
             R0[i] = R0[i] * 1.0 / scale_value
             R_AB[i] = R_AB[i] * 1.0 / scale_value
             R_AB_EO[i] = R_AB_EO[i] * 1.0 / scale_value
@@ -587,10 +587,9 @@ def boxplot_rta_grouped_scale_p():
     #plt.xlim(-2, len(ticks) * 2)
     #plt.ylim(0, 8)
     plt.tight_layout()
-    plt.grid(which='major', linestyle=':', linewidth='0.5')
     fig = plt.gcf()
-    fig.set_size_inches(6.0, 3.0)
-    plt.grid(which='major', linestyle=':', linewidth='0.5')
+    fig.set_size_inches(6.5, 2.8)
+    plt.grid(which='major', axis='y', linestyle=':', linewidth='0.5')
     plt.savefig("exp-rta-scale-p-m{}.pdf".format(m))
     plt.show()
 
@@ -685,7 +684,7 @@ def boxplot_rta_grouped_scale_L():
     data_c = []
     data_d = []
 
-    m = 3
+    m = 2
     p = 8
     for L in [0.6, 0.7, 0.8, 0.9]:
         results = pickle.load(open(basefolder + "exp3/m{}-p{}-L{:.2f}.p".format(m, p, L), "rb"))
@@ -762,11 +761,10 @@ def boxplot_rta_grouped_scale_L():
     #plt.xlim(-2, len(ticks) * 2)
     #plt.ylim(0, 8)
     plt.tight_layout()
-    plt.grid(which='major', linestyle=':', linewidth='0.5')
     fig = plt.gcf()
-    fig.set_size_inches(6.0, 3.0)
-    plt.grid(which='major', linestyle=':', linewidth='0.5')
-    plt.savefig("exp-rta-scale-p-m{}-p{}.pdf".format(m,p))
+    fig.set_size_inches(6.5, 2.6)
+    plt.grid(which='major', axis='y', linestyle=':', linewidth='0.5')
+    plt.savefig("exp-rta-scale-L-m{}-p{}.pdf".format(m,p))
     plt.show()
 
 
@@ -841,7 +839,7 @@ def comparison_A_B_counting(A, B):
     return count_less, count_equal, count_larger
 
 
-def barchart_simu_grouped():
+def barchart_ordering_grouped():
     # y-axis in bold
     rc('font', weight='bold')
 
@@ -859,7 +857,7 @@ def barchart_simu_grouped():
         R_TPDS = column(results, 5)
         
         compare_A = R_AB_EO
-        compare_B = R_TPDS
+        compare_B = R_AB_TPDS
 
         #R_AB_EO is bounded to R0 when comparing with R_TPDS
         if (compare_A == R_AB_EO or compare_A == R_AB_TPDS) and compare_B == R_TPDS:
@@ -923,9 +921,16 @@ def barchart_simu_grouped():
     plt.ylabel("Frequency")
     plt.legend(["EO $\succ$ He2019", "EO $\prec$ He2019"])
 
-    plt.grid(which='major', linestyle=':', linewidth='0.5')
+    
 
     # Show graphic
+    fig = plt.gcf()
+    fig.set_size_inches(6.0, 2.8)
+    plt.tight_layout()
+
+    plt.rc('axes', axisbelow=True)
+    #plt.grid(b=True, which='major', color='#666666', linestyle='-')
+    
     plt.savefig("exp-compare-ordering.pdf")
     plt.show()
 
@@ -946,41 +951,48 @@ def multi_DAG_plot():
     # red dashes, blue squares and green triangles
     plt.plot(x, y0, 'o--', label="random", markersize=8)
     plt.plot(x, y1, 's--', label="EO", markersize=8)
-    plt.plot(x, y2, '^--', label="He-2019", markersize=8)
+    plt.plot(x, y2, '^--', label="He2019", markersize=8)
     
     plt.xticks(x)
-    plt.xlabel("$\sum U$")
+    plt.xlabel("$\sum{U} / m$")
     plt.ylabel("Schedulable Tasksets (%)")
     plt.legend()
+
     fig = plt.gcf()
-    fig.set_size_inches(6.0, 4.2)
+    fig.set_size_inches(6.0, 2.8)
     plt.tight_layout()
+
+    # plt.grid(True, color='#7f7f7f', linestyle='dashed', linewidth=0.2)
     plt.savefig('exp-schedulablity.pdf')
     plt.show()
 
 
 if __name__ == "__main__":
+    #---------------------------------------------------------------------------
+    # HW experiments
     #rtss_boxplot_rta()
     #rtss_boxplot_simulation()
     
-    # RTSS experiments
+    #---------------------------------------------------------------------------
+    # RTSS'20 experiments
     # exp 1-1
-    #boxplot_rta_grouped_scale_m()
+    # boxplot_rta_grouped_scale_m()
 
     # exp 1-2
-    #boxplot_rta_grouped_scale_p()
+    boxplot_rta_grouped_scale_p()
     
     # exp 1-2(2)
     #boxplot_rta_grouped_scale_mp()
 
     # exp 1-3
-    #boxplot_rta_grouped_scale_L()
+    # boxplot_rta_grouped_scale_L()
     
     # exp 1-4
     # hist_sensitivity_L()
 
     # exp 2
-    barchart_simu_grouped()
+    #barchart_ordering_grouped()
 
     # exp 3
     #multi_DAG_plot()
+    #---------------------------------------------------------------------------
