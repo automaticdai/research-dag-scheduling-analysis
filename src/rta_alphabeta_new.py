@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 from matplotlib import rc
 import pickle
 from operator import itemgetter
+import time, datetime
 
 import networkx as nx
 import copy
@@ -1155,7 +1156,16 @@ def Eligiblity_Ordering_PA(G_dict, C_dict):
 
     # --------------------------------------------------------------------------
     # IV. Start iteration
+    # >> for time measurement
+    global time_diff
+    begin_time = time.time()
+    # << for time measurement
+
     EO_iter(G_dict, C_dict, providers, consumers, Prio)
+
+    # >> for time measurement
+    time_diff = time.time() - begin_time
+    # << for time measurement
 
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     for i in Prio:
@@ -1749,6 +1759,8 @@ def TPDS_rta(task_idx, m):
     return R0
 
 
+
+time_diff = 0
 ################################################################################
 ################################################################################
 if __name__ == "__main__":
@@ -1801,7 +1813,8 @@ if __name__ == "__main__":
     # exp 2: scale p
     # exp 3: scale L
     # exp 4: multi-DAG
-    exp = 4
+    # exp 5: time complexitiy (for rebuttal)
+    exp = 5
 
     if exp == 1:
         # exp 1
@@ -1863,4 +1876,17 @@ if __name__ == "__main__":
     elif exp == 4:
         m = 6
         rta_schedulability_test(m)
+    elif exp == 5:
+        res = []
+        
+        for task_id in range(1000):
+            G_dict, C_dict, C_array, lamda, VN_array, L, W = load_task(task_id)
+            Eligiblity_Ordering_PA(G_dict, C_dict)
+            print(time_diff)
 
+            # to avoid anomalies in the measurements
+            if time_diff < 0.05:
+                res.append(time_diff)
+        
+        print("Mean:", sum(res) / len(res))
+        print("Min:", min(res))

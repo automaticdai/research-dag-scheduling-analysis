@@ -203,9 +203,12 @@ def plot_stacked_barchart():
 
     # Show graphic
     plt.show()
+
+
+
+
+
 # ==============================================================================
-
-
 def plot_rta():
     boxplot_data = []
 
@@ -285,11 +288,8 @@ def rtss_boxplot_rta():
 
         R0[idx] =  1
 
-
     # boxplot 
     boxplot_data = [R0, R_AB, R_AB_EO, R_AB_TPDS, R_TPDS]
-
-
 
     bp1 = plt.boxplot(boxplot_data,
                         notch=False,  # notch shape
@@ -329,8 +329,6 @@ def rtss_boxplot_simulation():
 
     # boxplot 
     boxplot_data = [M0, M_EO, M_TPDS, M_EMSOFT]
-
-
 
     bp1 = plt.boxplot(boxplot_data,
                         notch=False,  # notch shape
@@ -376,10 +374,7 @@ def comparison_RTA_Simu():
 
 
 
-
-
-
-
+# ==============================================================================
 basefolder = "./r_0628_01/"
 
 # for exp 1
@@ -921,8 +916,6 @@ def barchart_ordering_grouped():
     plt.ylabel("Frequency")
     plt.legend(["EO $\succ$ He2019", "EO $\prec$ He2019"])
 
-    
-
     # Show graphic
     fig = plt.gcf()
     fig.set_size_inches(6.0, 2.8)
@@ -959,7 +952,7 @@ def multi_DAG_plot():
     plt.legend()
 
     fig = plt.gcf()
-    fig.set_size_inches(6.0, 2.8)
+    fig.set_size_inches(6.0, 4)
     plt.tight_layout()
 
     # plt.grid(True, color='#7f7f7f', linestyle='dashed', linewidth=0.2)
@@ -979,7 +972,7 @@ if __name__ == "__main__":
     # boxplot_rta_grouped_scale_m()
 
     # exp 1-2
-    boxplot_rta_grouped_scale_p()
+    #boxplot_rta_grouped_scale_p()
     
     # exp 1-2(2)
     #boxplot_rta_grouped_scale_mp()
@@ -994,5 +987,5 @@ if __name__ == "__main__":
     #barchart_ordering_grouped()
 
     # exp 3
-    #multi_DAG_plot()
+    multi_DAG_plot()
     #---------------------------------------------------------------------------
