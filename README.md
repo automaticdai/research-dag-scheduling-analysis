@@ -4,7 +4,12 @@
 [![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://GitHub.com/Naereen/StrapDown.js/graphs/commit-activity)
 [![License](http://img.shields.io/:license-mit-blue.svg)](http://badges.mit-license.org)
 
-Simulate DAG tasksets execution on multi-cores. This package supports:
+This is the simulator used in the work "DAG Scheduling and Analysis on Multiprocessor Systems: Exploitation of Parallelism and Dependency". 
+
+
+## Introduction
+
+Simulate DAG tasksets execution on multi-cores. This software package supports:
 
 - plug-in scheduling policies
 - plug-in response time analysis (RTA)
@@ -18,8 +23,7 @@ Supported scheduling alogrithms:
 - Non-preemptive with random ordering
 - Non-preemptive with eligibility ordering
 - Dynamic C_high first 
-- (Todo) Preemptive Fixed-priority Scheduling 
-- (Todo) Preemptive workload distribution model
+
 
 Support response time analysis:
 
@@ -38,12 +42,12 @@ Suppored execution models:
 For random, two algorithms can be chosen from:
 
 - Normal distributed
-- (Todo) Uniformed distributed
+- Uniformed distributed
 
 (*) Note the normal distributed model is thresholded by 3 delta.
 
 
-## Install & Run
+## Instructions
 
 Before run, install Python libraries using:
 
@@ -63,6 +67,13 @@ The results will be in the `results` folder.
 ## Known Issues
 
 n/a
+
+
+## Citation
+
+Shuai Zhao, Xiaotian Dai, Iain Bate, Alan Burns, Wanli Chang. "DAG Scheduling and Analysis on Multiprocessor Systems: Exploitation of Parallelism and Dependency". The IEEE Real-Time Systems Symposium. 2020.
+
+Please cite the above work if you use this code in your work.
 
 
 ## License
