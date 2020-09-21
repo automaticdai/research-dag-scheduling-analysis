@@ -4,7 +4,7 @@
 [![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://GitHub.com/Naereen/StrapDown.js/graphs/commit-activity)
 [![License](http://img.shields.io/:license-mit-blue.svg)](http://badges.mit-license.org)
 
-This is the simulator used in the work "DAG Scheduling and Analysis on Multiprocessor Systems: Exploitation of Parallelism and Dependency". 
+This is the simulator used in the conference paper *DAG Scheduling and Analysis on Multiprocessor Systems: Exploitation of Parallelism and Dependency* for RTSS 2020. 
 
 
 ## Introduction
@@ -14,22 +14,23 @@ Simulate DAG tasksets execution on multi-cores. This software package supports:
 - plug-in scheduling policies
 - plug-in response time analysis (RTA)
 - trace execution logs
-- use with rnd-dag-gen task generator
+- use with the [!dag-gen-rnd](https://github.com/automaticdai/dag-gen-rnd) DAG task generator
 - configurable scheduling and task parameters
 
 
 Supported scheduling alogrithms:
 
 - Non-preemptive with random ordering
-- Non-preemptive with eligibility ordering
-- Dynamic C_high first 
+- Non-preemptive with eligibility ordering (proposed)
+- Dynamic ordering (highest Ci first)
+- Static prioirity assignment proposed in Q. He, N. Guan, Z. Guoet al., “Intra-task priority assignment in real-time  scheduling  of  DAG  tasks  on  multi-cores,”IEEE  Transactions  onParallel and Distributed Systems, vol. 30, no. 10, pp. 2283–2295, 2019.
 
 
-Support response time analysis:
+Support response time analysis (RTA):
 
-- classical 1/m bound
-- (alpha, beta) analysis
-- (alpha, beta) analysis with eligibility ordering
+- Classical 1/m bound
+- The proposed (alpha, beta) analysis
+- The proposed (alpha, beta) analysis with eligibility ordering
 
 
 Suppored execution models:
@@ -38,6 +39,7 @@ Suppored execution models:
 - Full-random: [1, WCET]
 - Half-random: [WCET/2, WCET]
 - Random-a,b: [a * WCET, b * WCET]
+
 
 For random, two algorithms can be chosen from:
 
@@ -49,9 +51,9 @@ For random, two algorithms can be chosen from:
 
 ## Instructions
 
-Before run, install Python libraries using:
+Before run, install Python libraries using pip:
 
-`> python3 -m pip install -r "requirements.txt"`
+`> sudo python3 -m pip install -r "requirements.txt"`
 
 Then, run the simulator with:
 
@@ -66,14 +68,14 @@ The results will be in the `results` folder.
 
 ## Known Issues
 
-n/a
+No known issues up-to-date.
 
 
 ## Citation
 
-Shuai Zhao, Xiaotian Dai, Iain Bate, Alan Burns, Wanli Chang. "DAG Scheduling and Analysis on Multiprocessor Systems: Exploitation of Parallelism and Dependency". The IEEE Real-Time Systems Symposium. 2020.
+Please cite the following paper if you use this code in your work:
 
-Please cite the above work if you use this code in your work.
+Shuai Zhao, Xiaotian Dai, Iain Bate, Alan Burns and Wanli Chang. *DAG Scheduling and Analysis on Multiprocessor Systems: Exploitation of Parallelism and Dependency*. The IEEE Real-Time Systems Symposium. 2020.
 
 
 ## License
