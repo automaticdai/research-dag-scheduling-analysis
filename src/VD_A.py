@@ -4,10 +4,7 @@ from bisect import bisect_left
 from typing import List
 
 import numpy as np
-import pandas as pd
 import scipy.stats as ss
-
-from pandas import Categorical
 
 
 def VD_A(treatment: List[float], control: List[float]):

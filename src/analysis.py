@@ -805,6 +805,7 @@ def comparison_A_B_counting(A, B):
     count_larger = 0
 
     advantage_cases = []
+    disadvantage_cases = []
 
     for i in range(len(A)):
         a = A[i]
@@ -823,9 +824,12 @@ def comparison_A_B_counting(A, B):
         
         if a > b:
             count_larger = count_larger + 1
+            diff_percentage = (b-a) * 1.0 / b * 100
+            disadvantage_cases.append(diff_percentage)
     
     #print(count_less, count_equal, count_larger)
-    print("{:.2f} {:.2f} {:.2f}".format((sum(advantage_cases) / len(advantage_cases)), (max(advantage_cases)), (min(advantage_cases))))
+    print(">>: Mean: {:.2f} Max: {:.2f} Min: {:.2f}".format((sum(advantage_cases) / len(advantage_cases)), (max(advantage_cases)), (min(advantage_cases))))
+    print("<<: Mean: {:.2f} Max: {:.2f} Min: {:.2f}".format((sum(disadvantage_cases) / len(disadvantage_cases)), (max(disadvantage_cases)), (min(disadvantage_cases))))
 
     return count_less, count_equal, count_larger
 
@@ -839,6 +843,7 @@ def barchart_ordering_grouped():
     bars_G = []
 
     for m in [2, 3, 4, 5, 6, 7, 8]:
+        print("----------")
         print("m =", m)
         # load data (simu)
         results = pickle.load(open(basefolder + "m{}.p".format(m), "rb")) # 
@@ -858,11 +863,19 @@ def barchart_ordering_grouped():
 
         L, EQ, G = comparison_A_B_counting(compare_A, compare_B)
 
+
         # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-        set_A = compare_A.copy()
-        set_B = compare_B.copy()
-        estimate, magnitude = VD_A(set_A, set_B)
-        print(len(set_A), estimate, magnitude)
+        # repeat the previous step again for A < B
+
+
+
+        # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
+
+        # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+        #set_A = compare_A.copy()
+        #set_B = compare_B.copy()
+        #estimate, magnitude = VD_A(set_A, set_B)
+        #print(len(set_A), estimate, magnitude)
 
         set_A = []
         set_B = []
@@ -871,7 +884,7 @@ def barchart_ordering_grouped():
                 set_A.append(i)
                 set_B.append(j) 
         estimate, magnitude = VD_A(set_A, set_B)
-        print(len(set_A), estimate, magnitude)
+        print("EO >> He: ", len(set_A), magnitude)
 
         set_A = []
         set_B = []
@@ -880,7 +893,7 @@ def barchart_ordering_grouped():
                 set_A.append(i)
                 set_B.append(j) 
         estimate, magnitude = VD_A(set_A, set_B)
-        print(len(set_A), estimate, magnitude)
+        print("EO << He: ", len(set_A), magnitude)
         # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
         #stacked_plots(compare_A, R_AB_TPDS)
@@ -960,22 +973,22 @@ def generate_results():
     #---------------------------------------------------------------------------
     # RTSS'2020 experiments
     # Evaluation. A
+    print("Figure 2:")
     boxplot_rta_grouped_scale_m()
-    print("Figure 2 --- Done.")
-
+    
     # Evaluation. B-1
+    print("Figure 3:")
     boxplot_rta_grouped_scale_p()
-    print("Figure 3 --- Done.")
     
     # Evaluation. B-2
+    print("Figure 4:")
     boxplot_rta_grouped_scale_L()
-    print("Figure 4 --- Done.")
 
     # Evaluation. C
+    print("Figure 5, Table I and Table II:")
     barchart_ordering_grouped()
-    print("Figure 4 --- Done.")
-
+    
     # Evaluation. D
+    print("Figure 6:")
     multi_DAG_plot()
-    print("Figure 6 --- Done.")
     #---------------------------------------------------------------------------
