@@ -35,7 +35,7 @@ class Simulator:
         # enable logger
         trace_init(log_to_file = False)
         
-        # # # # # # # # # #
+        # =====================
         # start simulation
         n = 0
         random.seed(0)
@@ -73,7 +73,7 @@ class Simulator:
             dag = DAGTask(G_dict, C_exp)
             dag_C_origin = dag.C.copy()  # make a copy if dag
 
-            # # # # # # # # # #
+            # =====================
             # iteratives algorithms
             for algorithm_name in ("random", "eligibility"):
                 # iteratives number of cores

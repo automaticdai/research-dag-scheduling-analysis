@@ -1,6 +1,7 @@
 *.pyc
+data/
 results/
-data*/
+outputs/
 .vscode/
 *.log
 *.p

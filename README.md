@@ -1,11 +1,8 @@
-# DAG Scheduling Simulator
+# DAG Scheduling Simulator (Multi-Core)
 
 [![made-with-python](https://img.shields.io/badge/Made%20with-Python-1f425f.svg)](https://www.python.org/)
 [![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://GitHub.com/Naereen/StrapDown.js/graphs/commit-activity)
 [![License](http://img.shields.io/:license-mit-blue.svg)](http://badges.mit-license.org)
-
-This is the simulator used in the conference paper *DAG Scheduling and Analysis on Multiprocessor Systems: Exploitation of Parallelism and Dependency* for RTSS 2020. 
-
 
 ## Introduction
 
@@ -18,12 +15,12 @@ Simulate DAG tasksets execution on multi-cores. This software package supports:
 - configurable scheduling and task parameters
 
 
-Supported scheduling alogrithms:
+Supported scheduling algorithms:
 
 - Non-preemptive with random ordering
 - Non-preemptive with eligibility ordering (proposed)
 - Dynamic ordering (highest Ci first)
-- Static prioirity assignment proposed in Q. He, N. Guan, Z. Guoet al., “Intra-task priority assignment in real-time  scheduling  of  DAG  tasks  on  multi-cores,”IEEE  Transactions  onParallel and Distributed Systems, vol. 30, no. 10, pp. 2283–2295, 2019.
+- Static priority assignment proposed in Q. He, N. Guan, Z. Guo et al., “Intra-task priority assignment in real-time  scheduling  of  DAG  tasks  on  multi-cores,”IEEE  Transactions  on Parallel and Distributed Systems, vol. 30, no. 10, pp. 2283–2295, 2019.
 
 
 Support response time analysis (RTA):
@@ -33,7 +30,7 @@ Support response time analysis (RTA):
 - The proposed (alpha, beta) analysis with eligibility ordering
 
 
-Suppored execution models:
+Supported execution models:
 
 - WCET
 - Full-random: [1, WCET]
@@ -64,6 +61,15 @@ and finally:
 `> python3 src/analysis.py`
 
 The results will be in the `results` folder.
+
+## Folder Organization
+
+- `src/`: contains all source code in .py.
+- `data/`: save all the input data (from a DAG generator).
+- `results/`: save all the intermediate raw results.
+- `outputs/`: save all the produced diagrams.
+- `requirements.txt`: Python libraries that are required.
+- `README.md`: the repository readme document.
 
 
 ## Known Issues

@@ -9,15 +9,11 @@
 import math
 import random, statistics
 import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
-from matplotlib import rc
-import seaborn as sns
-
 import pickle
-
 import networkx as nx
 
+from matplotlib import rc
 from graph import find_longest_path_dfs, find_predecesor, find_successor, get_subpath_between
 from rta_alphabeta_new import rta_np_classic, load_task
 from VD_A import VD_A
@@ -375,7 +371,7 @@ def comparison_RTA_Simu():
 
 
 # ==============================================================================
-basefolder = "./r_0628_01/"
+basefolder = "./results/"
 
 # for exp 1
 def boxplot_rta_grouped_scale_m():
@@ -385,7 +381,7 @@ def boxplot_rta_grouped_scale_m():
     data_d = []
 
     for m in [2, 4, 6, 7, 8]:
-        results = pickle.load(open(basefolder + "exp1/m{}.p".format(m), "rb"))
+        results = pickle.load(open(basefolder + "m{}.p".format(m), "rb"))
 
         task_idx = column(results, 0)
         R0 = column(results, 1)
@@ -454,36 +450,36 @@ def boxplot_rta_grouped_scale_m():
     fig = plt.gcf()
     fig.set_size_inches(6.5, 3.0)
     plt.grid(which='major', axis='y', linestyle=':', linewidth='0.5')
-    plt.savefig("exp-rta-scale-m.pdf")
+    plt.savefig("outputs/exp-rta-scale-m.pdf")
     plt.show()
 
 
 def stacked_plots (A, B):
-  overall_effect_size = []
-  number_of_trails = 1000
-  for trial_index in range(number_of_trails):
-    # I don't quite follow your data list formats
-    # I am assuming A[trial_index] would give me the response times for method A from trial "trial_index"
-    N = len (A[trial_index])
-    M = len (B[trial_index])
     overall_effect_size = []
-    no_of_samples = min (N, M)
-    if no_of_samples != 0:
-        estimate, magnitude = VD_A (random.sample (A[trial_index], no_of_samples), random.sample (B[trial_index], no_of_samples))
-        effect_size = [[0]*8]    
-        if statistics.median (A[trial_index]) < statistics.median (B[trial_index]):
-            offset = 0
-        else:
-            offset = 4
-        if (magnitude == "negligible"):
-            effect_size[0+offset] += 1 # number of times i is better
-        if magnitude == "small":
-            effect_size[1+offset] += 1 # number of times i is better
-        if magnitude == "medium":
-            effect_size[2+offset] += 1 # number of times i is better
-        if magnitude == "large":
-            effect_size[3+offset] += 1 # number of times i is better
-        overall_effect_size.append(effect_size)
+    number_of_trails = 1000
+    for trial_index in range(number_of_trails):
+        # I don't quite follow your data list formats
+        # I am assuming A[trial_index] would give me the response times for method A from trial "trial_index"
+        N = len (A[trial_index])
+        M = len (B[trial_index])
+        overall_effect_size = []
+        no_of_samples = min (N, M)
+        if no_of_samples != 0:
+            estimate, magnitude = VD_A (random.sample (A[trial_index], no_of_samples), random.sample (B[trial_index], no_of_samples))
+            effect_size = [[0]*8]    
+            if statistics.median (A[trial_index]) < statistics.median (B[trial_index]):
+                offset = 0
+            else:
+                offset = 4
+            if (magnitude == "negligible"):
+                effect_size[0+offset] += 1 # number of times i is better
+            if magnitude == "small":
+                effect_size[1+offset] += 1 # number of times i is better
+            if magnitude == "medium":
+                effect_size[2+offset] += 1 # number of times i is better
+            if magnitude == "large":
+                effect_size[3+offset] += 1 # number of times i is better
+            overall_effect_size.append(effect_size)
     
     # Here you probably need to convert overall_effect to item
     # I can't quite remember how it works but something like the follow will probably work
@@ -502,12 +498,12 @@ def stacked_plots (A, B):
     plt.bar (y_pos, item[0:3], align='center', alpha=0.5, color='r', label="X>Y")
     plt.bar (y_pos, item[4:], align='center', alpha=0.5, bottom=item[0:3], color='b', label="X<Y") 
     plt.legend(loc="upper left")        
-    filename = "test.png"
+    filename = "outputs/test.png"
     plt.savefig (filename, bbox_inches = "tight")
     plt.close ()
 
 
-# for exp 1-2
+# for exp 2-1
 def boxplot_rta_grouped_scale_p():
     data_a = []
     data_b = []
@@ -516,7 +512,7 @@ def boxplot_rta_grouped_scale_p():
 
     m = 4
     for p in [4, 5, 6, 7, 8]:
-        results = pickle.load(open(basefolder + "exp2/m{}-p{}.p".format(m, p), "rb"))
+        results = pickle.load(open(basefolder + "m{}-p{}.p".format(m, p), "rb"))
 
         task_idx = column(results, 0)
         R0 = column(results, 1)
@@ -585,11 +581,11 @@ def boxplot_rta_grouped_scale_p():
     fig = plt.gcf()
     fig.set_size_inches(6.5, 2.8)
     plt.grid(which='major', axis='y', linestyle=':', linewidth='0.5')
-    plt.savefig("exp-rta-scale-p-m{}.pdf".format(m))
+    plt.savefig("outputs/exp-rta-scale-p-m{}.pdf".format(m))
     plt.show()
 
 
-# for exp 1-2 (2)
+# for exp 2-2
 def boxplot_rta_grouped_scale_mp():
     data_a = []
     data_b = []
@@ -598,7 +594,7 @@ def boxplot_rta_grouped_scale_mp():
 
     group_idx = 0
     for m,p in [(4,4), (5,5), (6,6), (7,7), (8,8)]:
-        results = pickle.load(open(basefolder + "exp2/m{}-p{}.p".format(m, p), "rb"))
+        results = pickle.load(open(basefolder + "m{}-p{}.p".format(m, p), "rb"))
 
         task_idx = column(results, 0)
         R0 = column(results, 1)
@@ -668,11 +664,11 @@ def boxplot_rta_grouped_scale_mp():
     fig = plt.gcf()
     fig.set_size_inches(6.0, 3.0)
     plt.grid(which='major', linestyle=':', linewidth='0.5')
-    plt.savefig("exp-rta-scale-m-p.pdf")
+    plt.savefig("outputs/exp-rta-scale-m-p.pdf")
     plt.show()
 
 
-# for exp 1-3
+# for exp 2-3
 def boxplot_rta_grouped_scale_L():
     data_a = []
     data_b = []
@@ -682,7 +678,7 @@ def boxplot_rta_grouped_scale_L():
     m = 2
     p = 8
     for L in [0.6, 0.7, 0.8, 0.9]:
-        results = pickle.load(open(basefolder + "exp3/m{}-p{}-L{:.2f}.p".format(m, p, L), "rb"))
+        results = pickle.load(open(basefolder + "m{}-p{}-L{:.2f}.p".format(m, p, L), "rb"))
 
         task_idx = column(results, 0)
         R0 = column(results, 1)
@@ -759,11 +755,11 @@ def boxplot_rta_grouped_scale_L():
     fig = plt.gcf()
     fig.set_size_inches(6.5, 2.6)
     plt.grid(which='major', axis='y', linestyle=':', linewidth='0.5')
-    plt.savefig("exp-rta-scale-L-m{}-p{}.pdf".format(m,p))
+    plt.savefig("outputs/exp-rta-scale-L-m{}-p{}.pdf".format(m,p))
     plt.show()
 
 
-# for exp 1-4: sensitivity
+# for exp 2-4 sensitivity
 def hist_sensitivity_L():
     data_a = []
     data_b = []
@@ -795,13 +791,13 @@ def hist_sensitivity_L():
     plt.colorbar()
     fig = plt.gcf()
     fig.set_size_inches(6.0, 4.0)
-    plt.savefig("exp-sensitivity.pdf")
+    plt.savefig("outputs/exp-sensitivity.pdf")
     plt.show()
     
     return
 
 
-# for exp 2
+# for exp 3 comparison methods
 def comparison_A_B_counting(A, B):
     # rta vs simu
     count_less = 0
@@ -810,7 +806,7 @@ def comparison_A_B_counting(A, B):
 
     advantage_cases = []
 
-    for i in range(1000):
+    for i in range(len(A)):
         a = A[i]
         b = B[i]
 
@@ -845,7 +841,7 @@ def barchart_ordering_grouped():
     for m in [2, 3, 4, 5, 6, 7, 8]:
         print("m =", m)
         # load data (simu)
-        results = pickle.load(open(basefolder + "exp1/m{}.p".format(m), "rb")) # 
+        results = pickle.load(open(basefolder + "m{}.p".format(m), "rb")) # 
         R0 = column(results, 1)
         R_AB_EO = column(results, 3)
         R_AB_TPDS = column(results, 4)
@@ -924,22 +920,22 @@ def barchart_ordering_grouped():
     plt.rc('axes', axisbelow=True)
     #plt.grid(b=True, which='major', color='#666666', linestyle='-')
     
-    plt.savefig("exp-compare-ordering.pdf")
+    plt.savefig("outputs/exp-compare-ordering.pdf")
     plt.show()
 
 
-# for exp 3
+# for exp 4 multi-DAG scheduability plot
 def multi_DAG_plot():
     # evenly sampled time at 200ms intervals
-    x  = [0.1, 0.15, 0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5, 0.55, 0.6]
-    y0 = [100.0, 100.0, 100.0, 99.9, 87.4,  0.9,  0.4, 0.3, 0.2, 0.2, 0]
-    y1 = [100.0, 100.0, 100.0, 99.9, 99.6, 80.0, 13.0, 0.7, 0.2, 0.2, 0.2]
-    y2 = [100.0, 100.0, 100.0, 99.9, 95.2, 26.7,  0.7, 0.3, 0.2, 0.2, 0.2]
+    x  = [  0.1,  0.15,   0.2, 0.25,  0.3, 0.35,  0.4, 0.45, 0.5, 0.55,  0.6]
+    y0 = [100.0, 100.0, 100.0, 99.9, 87.4,  0.9,  0.4,  0.3, 0.2,  0.2,    0]
+    y1 = [100.0, 100.0, 100.0, 99.9, 99.6, 80.0, 13.0,  0.7, 0.2,  0.2,  0.2]
+    y2 = [100.0, 100.0, 100.0, 99.9, 95.2, 26.7,  0.7,  0.3, 0.2,  0.2,  0.2]
 
-    x  = [0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5]
-    y0 = [100.0, 99.9, 87.4,  0.9,  0.4, 0.3, 0.2]
-    y1 = [100.0, 99.9, 99.6, 80.0, 13.0, 0.7, 0.2]
-    y2 = [100.0, 99.9, 95.2, 26.7,  0.7, 0.3, 0.2]
+    x  = [  0.2, 0.25,  0.3, 0.35,  0.4, 0.45, 0.5]
+    y0 = [100.0, 99.9, 87.4,  0.9,  0.4,  0.3, 0.2]
+    y1 = [100.0, 99.9, 99.6, 80.0, 13.0,  0.7, 0.2]
+    y2 = [100.0, 99.9, 95.2, 26.7,  0.7,  0.3, 0.2]
 
     # red dashes, blue squares and green triangles
     plt.plot(x, y0, 'o--', label="random", markersize=8)
@@ -956,36 +952,30 @@ def multi_DAG_plot():
     plt.tight_layout()
 
     # plt.grid(True, color='#7f7f7f', linestyle='dashed', linewidth=0.2)
-    plt.savefig('exp-schedulablity.pdf')
+    plt.savefig('outputs/exp-schedulablity.pdf')
     plt.show()
 
 
-if __name__ == "__main__":
+def generate_results():
     #---------------------------------------------------------------------------
-    # HW experiments
-    #rtss_boxplot_rta()
-    #rtss_boxplot_simulation()
+    # RTSS'2020 experiments
+    # Evaluation. A
+    boxplot_rta_grouped_scale_m()
+    print("Figure 2 --- Done.")
+
+    # Evaluation. B-1
+    boxplot_rta_grouped_scale_p()
+    print("Figure 3 --- Done.")
     
-    #---------------------------------------------------------------------------
-    # RTSS'20 experiments
-    # exp 1-1
-    # boxplot_rta_grouped_scale_m()
+    # Evaluation. B-2
+    boxplot_rta_grouped_scale_L()
+    print("Figure 4 --- Done.")
 
-    # exp 1-2
-    #boxplot_rta_grouped_scale_p()
-    
-    # exp 1-2(2)
-    #boxplot_rta_grouped_scale_mp()
+    # Evaluation. C
+    barchart_ordering_grouped()
+    print("Figure 4 --- Done.")
 
-    # exp 1-3
-    # boxplot_rta_grouped_scale_L()
-    
-    # exp 1-4
-    # hist_sensitivity_L()
-
-    # exp 2
-    #barchart_ordering_grouped()
-
-    # exp 3
+    # Evaluation. D
     multi_DAG_plot()
+    print("Figure 6 --- Done.")
     #---------------------------------------------------------------------------

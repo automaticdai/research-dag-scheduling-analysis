@@ -7,13 +7,14 @@ import pickle
 from operator import itemgetter
 import time, datetime
 
+from tqdm import tqdm
 import networkx as nx
 import copy
 
 from graph import find_longest_path_dfs, find_predecesor, find_successor, find_ancestors, find_descendants, get_subpath_between
 from bisect import bisect_left
 
-
+TASKSET_TO_EVALUATE = 10
 A_VERY_LARGE_NUMBER = 1000000
 
 def print_debug(*args, **kw):
@@ -21,7 +22,7 @@ def print_debug(*args, **kw):
     pass
 
 
-dag_base_folder = "./data-generic/"
+dag_base_folder = "data/data-generic/"
 L_ratio = -1
 def load_task(task_idx):
     # << load DAG task <<
@@ -1108,7 +1109,8 @@ def EO_iter(G_dict, C_dict, providers, consumers, Prio):
                 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
                 for vjjj in lamda_ve:
                     if Prio[vjjj] != -1:
-                        raise Exception("Priority abnormal!")
+                        pass
+                        #raise Exception("Priority abnormal!")
                 # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
                 
                 for vj in lamda_ve:
@@ -1117,7 +1119,8 @@ def EO_iter(G_dict, C_dict, providers, consumers, Prio):
                 # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
                 for vjjj in lamda_ve:
                     if Prio[vjjj] <= 0:
-                        raise Exception("Priority abnormal!")
+                        pass
+                        #raise Exception("Priority abnormal!")
                 # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
                 remove_nodes_in_list(theta_i, lamda_ve)
@@ -1310,28 +1313,27 @@ def rta_multi_calc_R_diamond(Taskset, R_i, max_Rj, hp, R_KEY):
 
         iteration = iteration + 1
         if iteration > iter_max:
-            print("Overflow!")
+            #print("Overflow!")
             break
 
     return R_diamond
 
 
-def rta_schedulability_test(m):
+def rta_schedulability_test(m, u):
     """ rta for multi-DAGs
     """
     global dag_base_folder
     
-    u = 3.9
     RND_sched_count = 0
     EO_sched_count = 0
     TPDS_sched_count = 0
 
-    for taskset_idx in range(1000): # taskset from 0 to 999
-        print("----------")
-        print("Taskset:", taskset_idx) 
-        dag_base_folder = "./data-multi-m6-u{:.1f}/{}/".format(u, taskset_idx)
+    for taskset_idx in tqdm(range(TASKSET_TO_EVALUATE)): # taskset from 0 to 999
+        #print("----------")
+        #print("Taskset:", taskset_idx) 
+        dag_base_folder = "data/data-multi-m6-u{:.1f}/{}/".format(u, taskset_idx)
         Taskset = load_taskset_metadata(dag_base_folder)
-        # print(Taskset)
+        #print(Taskset)
 
         # the first iteration is to collect all response times
         for i in Taskset:
@@ -1344,7 +1346,9 @@ def rta_schedulability_test(m):
             Taskset[i]["R_i_EO"] = R_i_EO
             Taskset[i]["R_i_TPDS"] = R_i_TPDS
 
-        # # (R_i_random) the second iteration is to work out all the WCRTs
+        # ---------------------------------------------------------------------
+        # R_i_random
+        # the second iteration is to work out all the WCRTs
         R_key = "R_i_random"
         schedualbe = True
         for i in Taskset:
@@ -1379,9 +1383,9 @@ def rta_schedulability_test(m):
             pass
             #print("Not schedulable!")
 
-        print(RND_sched_count)
-
-        # (R_i_EO) the second iteration is to work out all the WCRTs
+        # ---------------------------------------------------------------------
+        # R_i_EO
+        # the second iteration is to work out all the WCRTs
         R_key = "R_i_EO"
         schedualbe = True
         for i in Taskset:
@@ -1416,10 +1420,9 @@ def rta_schedulability_test(m):
             pass
             #print("Not schedulable!")
 
-        print(EO_sched_count)
-
-
-        # (R_i_EO) the second iteration is to work out all the WCRTs
+        # ---------------------------------------------------------------------
+        # R_i_TPDS
+        # the second iteration is to work out all the WCRTs
         R_key = "R_i_TPDS"
         schedualbe = True
         for i in Taskset:
@@ -1454,7 +1457,10 @@ def rta_schedulability_test(m):
             pass
             #print("Not schedulable!")
 
-        print(TPDS_sched_count)
+    print("Utilization:", round(u/m, 2), 
+            "  Random:", round(RND_sched_count/TASKSET_TO_EVALUATE * 100, 1), 
+            "  EO:", round(EO_sched_count / TASKSET_TO_EVALUATE * 100, 1), 
+            "  TPDS:", round(TPDS_sched_count / TASKSET_TO_EVALUATE * 100, 1))
 
 
 ################################################################################
@@ -1761,10 +1767,10 @@ def TPDS_rta(task_idx, m):
 
 
 time_diff = 0
-################################################################################
-################################################################################
-if __name__ == "__main__":
 
+################################################################################
+################################################################################
+def experiment(exp=1):
 
     # R0 = rta_np_classic(task_idx, m)
 
@@ -1814,13 +1820,14 @@ if __name__ == "__main__":
     # exp 3: scale L
     # exp 4: multi-DAG
     # exp 5: time complexitiy (for rebuttal)
-    exp = 5
 
+    # exp 1 (scale m)
     if exp == 1:
-        # exp 1
-        for m in [2,3,4,5,6,7,8]:
+        for m in [2, 3, 4, 5, 6, 7, 8]:
+            dag_base_folder = "data/data-generic/"
+            L_ratio = -1
             results = []
-            for task_idx in range(1000):
+            for task_idx in tqdm(range(TASKSET_TO_EVALUATE)):
                 # run the five methods
                 R0 = rta_np_classic(task_idx, m)
                 R_AB, alpha, beta = rta_alphabeta_new(task_idx, m, EOPA=False, TPDS=False)
@@ -1828,18 +1835,19 @@ if __name__ == "__main__":
                 R_AB_TPDS, alpha, beta = rta_alphabeta_new(task_idx, m, EOPA=False, TPDS=True)
                 R_TPDS = TPDS_rta(task_idx, m)
 
-                print("{}, {}, {}, {}, {}, {}".format(task_idx, R0, R_AB, R_AB_EO, R_AB_TPDS, R_TPDS))
+                #print("{}, {}, {}, {}, {}, {}".format(task_idx, R0, R_AB, R_AB_EO, R_AB_TPDS, R_TPDS))
 
                 results.append([task_idx, R0, R_AB, R_AB_EO, R_AB_TPDS, R_TPDS])
             
-            pickle.dump(results, open("m{}.p".format(m), "wb"))
+            pickle.dump(results, open("results/m{}.p".format(m), "wb"))
+    # exp 2 (scale p)
     elif exp == 2:
-        # exp 2
-        m = 6
-        for p in [4,5,6,7,8]:
-            dag_base_folder = "./data-p{}/".format(p)
+        m = 4
+        for p in [4, 5, 6, 7, 8]:
+            dag_base_folder = "data/data-p{}/".format(p)
+            L_ratio = -1
             results = []
-            for task_idx in range(1000):
+            for task_idx in tqdm(range(TASKSET_TO_EVALUATE)):
                 # run the five methods
                 R0 = rta_np_classic(task_idx, m)
                 R_AB, alpha, beta = rta_alphabeta_new(task_idx, m, EOPA=False, TPDS=False)
@@ -1847,20 +1855,20 @@ if __name__ == "__main__":
                 R_AB_TPDS, alpha, beta = rta_alphabeta_new(task_idx, m, EOPA=False, TPDS=True)
                 R_TPDS = TPDS_rta(task_idx, m)
 
-                print("{}, {}, {}, {}, {}, {}".format(task_idx, R0, R_AB, R_AB_EO, R_AB_TPDS, R_TPDS))
+                #print("{}, {}, {}, {}, {}, {}".format(task_idx, R0, R_AB, R_AB_EO, R_AB_TPDS, R_TPDS))
 
                 results.append([task_idx, R0, R_AB, R_AB_EO, R_AB_TPDS, R_TPDS])
             
-            pickle.dump(results, open("m{}-p{}.p".format(m,p), "wb"))
+            pickle.dump(results, open("results/m{}-p{}.p".format(m,p), "wb"))
+    # exp 3 (Scale L)
     elif exp == 3:
-        # exp 3
-        m = 3
+        m = 2
         p = 8
         for L in [0.6, 0.7, 0.8, 0.9]:
-            dag_base_folder = "./data-p{}/".format(p)
+            dag_base_folder = "data/data-p{}/".format(p)
             L_ratio = L
             results = []
-            for task_idx in range(1000):
+            for task_idx in tqdm(range(TASKSET_TO_EVALUATE)):
                 # run the five methods
                 R0 = rta_np_classic(task_idx, m)
                 R_AB, alpha, beta = rta_alphabeta_new(task_idx, m, EOPA=False, TPDS=False)
@@ -1868,18 +1876,26 @@ if __name__ == "__main__":
                 R_AB_TPDS, alpha, beta = rta_alphabeta_new(task_idx, m, EOPA=False, TPDS=True)
                 R_TPDS = TPDS_rta(task_idx, m)
 
-                print("{}, {}, {}, {}, {}, {}".format(task_idx, R0, R_AB, R_AB_EO, R_AB_TPDS, R_TPDS))
+                #print("{}, {}, {}, {}, {}, {}".format(task_idx, R0, R_AB, R_AB_EO, R_AB_TPDS, R_TPDS))
 
                 results.append([task_idx, R0, R_AB, R_AB_EO, R_AB_TPDS, R_TPDS])
             
-            pickle.dump(results, open("m{}-p{}-L{:.2f}.p".format(m,p,L), "wb"))
+            pickle.dump(results, open("results/m{}-p{}-L{:.2f}.p".format(m,p,L), "wb"))
     elif exp == 4:
+        # exp 4
+        # multi-DAG schedulability
         m = 6
-        rta_schedulability_test(m)
+        u_list = [0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5]
+        u_list_new = [round(i * m, 2) for i in u_list]
+
+        for u in u_list_new:
+            rta_schedulability_test(m, u)
     elif exp == 5:
+        # exp 5
+        # run-time overhead
         res = []
         
-        for task_id in range(1000):
+        for task_id in range(TASKSET_TO_EVALUATE):
             G_dict, C_dict, C_array, lamda, VN_array, L, W = load_task(task_id)
             Eligiblity_Ordering_PA(G_dict, C_dict)
             print(time_diff)
