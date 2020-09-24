@@ -535,7 +535,7 @@ def boxplot_rta_grouped_scale_p():
 
         # normalise
         for i, _ in enumerate(R0):
-            scale_value = 7580 # 7580, 7340
+            scale_value = 7580 # contant value for normalization: 7580, 7340
             R0[i] = R0[i] * 1.0 / scale_value
             R_AB[i] = R_AB[i] * 1.0 / scale_value
             R_AB_EO[i] = R_AB_EO[i] * 1.0 / scale_value

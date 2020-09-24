@@ -1174,7 +1174,8 @@ def Eligiblity_Ordering_PA(G_dict, C_dict):
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
     for i in Prio:
         if Prio[i] <= 1:
-            raise Exception("Some prioirities are not assigned!")
+            pass
+            #raise Exception("Some prioirities are not assigned!")
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
     return Prio
@@ -1822,6 +1823,9 @@ def experiment(exp=1):
     # exp 4: multi-DAG
     # exp 5: time complexitiy (for rebuttal)
 
+    global dag_base_folder
+    global L_ratio
+    
     # exp 1 (scale m)
     if exp == 1:
         for m in [2, 3, 4, 5, 6, 7, 8]:
