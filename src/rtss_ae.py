@@ -9,19 +9,19 @@ if __name__ == "__main__":
     print("========================================================")
 
     print("Running experiment 1/4:")
-    #experiment(1)
+    experiment(1)
 
     print("========================================================")
     print("Running experiment 2/4:")
-    #experiment(2)
+    experiment(2)
 
     print("========================================================")
     print("Running experiment 3/4:")
-    #experiment(3)
+    experiment(3)
 
     print("========================================================")
     print("Running experiment 4/4:")
-    #experiment(4)
+    experiment(4)
 
     print("========================================================")
     print("Raw data collection is finished!")

@@ -13,7 +13,7 @@ import copy
 from graph import find_longest_path_dfs, find_predecesor, find_successor, find_ancestors, find_descendants, get_subpath_between
 from bisect import bisect_left
 
-TASKSET_TO_EVALUATE = 10
+TASKSET_TO_EVALUATE = 1000
 A_VERY_LARGE_NUMBER = 1000000
 
 def print_debug(*args, **kw):
@@ -43,12 +43,12 @@ def load_task(task_idx):
 
         if v > max_key:
             max_key = v
-        
+
         if u not in V_array:
             V_array.append(u)
         if v not in V_array:
             V_array.append(v)
-        
+
         C_dict[u] = weight
     C_dict[max_key] = 1
 
@@ -84,7 +84,7 @@ def load_task(task_idx):
         L = 0
         for i in lamda:
             C_dict[i] = max(round(C_dict[i] * L_multiplier), 1)
-            L = L + C_dict[i] 
+            L = L + C_dict[i]
 
         vol_multiplier = vol_new / vol_old
         for i in VN_array:
@@ -123,7 +123,7 @@ def load_taskset_metadata(dag_base_folder):
         Ti = G.graph["T"]
         Wi = G.graph["W"]
         Ui = G.graph["U"]
-    
+
         ############################################################################
         # assign priorities according to RMPO / DMPO
         idx = bisect_left(aT, Ti)
@@ -155,7 +155,7 @@ def get_nodes_volume(nodes, C_list):
 
     for i in nodes:
         volume = volume + C_list[i]
-    
+
     return volume
 
 
@@ -178,7 +178,7 @@ def find_concurrent_nodes(G, node):
     '''
     ancs = find_ancestors(G, node, path=[])
     decs = find_descendants(G, node, path=[])
-    
+
     V = list(G.keys())
     V.remove(node)
     remove_nodes_in_list(V, ancs)
@@ -196,7 +196,7 @@ def test_parallelism(G, node, n):
     node_left = node.copy()
 
     while node_left:
-        # this search is limited to node, 
+        # this search is limited to node,
         # so all keys and values that do not contain node_left will be removed
         G_new = copy.deepcopy(G)
 
@@ -208,9 +208,9 @@ def test_parallelism(G, node, n):
                 for j in value:
                     if j not in node_left:
                         value_new.remove(j)
-                
+
                 G_new[key] = value_new
-        
+
         delta = delta + 1
         if delta >= n:
             #print_debug("PARALLISM: False")
@@ -251,7 +251,7 @@ def find_providers_consumers(G_dict, lamda, VN_array):
             pre_nodes = find_predecesor(G_dict, lamda[key+1])
 
             #print_debug("Checking: ", i, "Pre: ", pre_nodes)
-            if pre_nodes == [i]:    
+            if pre_nodes == [i]:
                 new_provider.append(lamda[key+1])
             else:
                 #print_debug("New provider:", new_provider)
@@ -302,7 +302,7 @@ def find_G_theta_i_star(G, providers, consumers, i):
     G_theta_i_star = []
 
     # collect all consumer nodes in the following providers
-    number_of_providers = len(providers) 
+    number_of_providers = len(providers)
     if i == number_of_providers - 1:
         # skip as this is the last provider
         return []
@@ -368,7 +368,7 @@ def rta_alphabeta_new(task_idx, m, EOPA=False, TPDS=False):
     for i, theta_i_star in enumerate(providers):
         print_debug("- - - - - - - - - - - - - - - - - - - -")
         print_debug("theta(*)", i, ":", theta_i_star)
-        print_debug("theta", i, ":", consumers[i])  
+        print_debug("theta", i, ":", consumers[i])
 
         # get the finish time of all provider nodes (in provider i)
         for _, provi_i in enumerate(theta_i_star):
@@ -385,7 +385,7 @@ def rta_alphabeta_new(task_idx, m, EOPA=False, TPDS=False):
 
             f_dict[provi_i] = f_i
             f_theta_i_star = f_i # finish time of theta_i_star. every loop refreshes this
-        
+
         # iteratives all consumers
         # (skipped) topoligical order, skipped because guaranteed by the generator
         # note: consumer can be empty
@@ -422,7 +422,7 @@ def rta_alphabeta_new(task_idx, m, EOPA=False, TPDS=False):
                 #print_debug("Int nodes:", int_ij)
 
                 I_dict[theta_ij] = int_ij
-                
+
 
                 if EOPA or TPDS:
                     # for EOPA, only the (m - 1) longest lower priority interference node is kept
@@ -456,7 +456,7 @@ def rta_alphabeta_new(task_idx, m, EOPA=False, TPDS=False):
                                     int_ij_EO.append( int_ij_EO_less_candidates_sorted[xxx - 1] )
 
                         int_ij = int_ij_EO.copy()
-                
+
                     I_e_dict[theta_ij] = int_ij
                 # >>> end of searching interference nodes
 
@@ -485,7 +485,7 @@ def rta_alphabeta_new(task_idx, m, EOPA=False, TPDS=False):
     for i, theta_i_star in enumerate(providers):
         print_debug("- - - - - - - - - - - - - - - - - - - -")
         print_debug("theta(*)", i, ":", theta_i_star)
-        print_debug("theta", i, ":", consumers[i])  
+        print_debug("theta", i, ":", consumers[i])
 
         # get the finish time of all provider nodes (in provider i)
         for _, provi_i in enumerate(theta_i_star):
@@ -502,7 +502,7 @@ def rta_alphabeta_new(task_idx, m, EOPA=False, TPDS=False):
 
             f_dict[provi_i] = f_i
             f_theta_i_star = f_i # finish time of theta_i_star. every loop refreshes this
-        
+
         print_debug("finish time of theta(*)", f_theta_i_star)
 
         # iteratives all consumers
@@ -512,7 +512,7 @@ def rta_alphabeta_new(task_idx, m, EOPA=False, TPDS=False):
         f_v_j_max = 0; f_v_j_max_idx = -1
         for _, theta_ij in enumerate(theta_i):
             print_debug(theta_ij, ":", C_dict[theta_ij])
-            
+
             # the interference term
             con_nc_ij = find_concurrent_nodes(G_dict, theta_ij)
             remove_nodes_in_list(con_nc_ij, lamda)
@@ -601,12 +601,12 @@ def rta_alphabeta_new(task_idx, m, EOPA=False, TPDS=False):
             if f_ij > f_v_j_max:
                 f_v_j_max = f_ij
                 f_v_j_max_idx = theta_ij
-        
+
         # --------------------------------------------------------------------------
         # start to calculate the response time of provider i
         Wi_nc = sum(C_dict[ij] for ij in theta_i)
         Li = sum(C_dict[ij] for ij in theta_i_star)
-        Wi = Wi_nc + Li 
+        Wi = Wi_nc + Li
 
 
         if not EOPA and not TPDS:
@@ -665,7 +665,7 @@ def rta_alphabeta_new(task_idx, m, EOPA=False, TPDS=False):
                     len_lamda_ve = len_lamda_ve + C_dict[ve_i]
                 else:
                     len_lamda_ve = len_lamda_ve + max((f_dict[ve_i] - f_theta_i_star), 0)
-            
+
             print_debug("lamda_ve:", lamda_ve, "len:", len_lamda_ve)
 
             # beta_i
@@ -701,7 +701,7 @@ def rta_alphabeta_new(task_idx, m, EOPA=False, TPDS=False):
 
             alpha_i_hat = sum(C_dict[ij] for ij in alpha_hat_class_a) + \
                             sum(f_theta_i_star - (f_dict[ij] - C_dict[ij]) for ij in alpha_hat_class_b)
-            
+
 
             # # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
             # # alpha case (b): find alpha by approximation
@@ -759,7 +759,7 @@ def rta_alphabeta_new(task_idx, m, EOPA=False, TPDS=False):
             #     for ij in llen_ij:
             #         if ij in theta_i_llen:
             #             theta_i_llen.remove(ij)
-                
+
             #     # save the llen_ij
             #     llen_i[n] = llen_ij
             #     len_llen_i[n] = len_llen_ij
@@ -847,7 +847,7 @@ def rta_alphabeta_new(task_idx, m, EOPA=False, TPDS=False):
 
             # alpha_i is the max of the two
             alpha_i = max(alpha_i_hat, alpha_i_new)
-        
+
         if not EOPA and not TPDS:
             # RTA-CFP
             # calculate the response time based on alpha_i and beta_i
@@ -879,7 +879,7 @@ def rta_alphabeta_new(task_idx, m, EOPA=False, TPDS=False):
                                     I_lambda_ve_j = C_dict[v_j]
                                 else:
                                     I_lambda_ve_j = f_dict[v_j] - f_theta_i_star
-                                
+
                                 len_I_lambda_ve[v_j] = I_lambda_ve_j
                             else:
                                 # E_k < E_i, put into a list and later will only get longest m - 1
@@ -894,7 +894,7 @@ def rta_alphabeta_new(task_idx, m, EOPA=False, TPDS=False):
                                 I_e_lambda_ve_candidates_I.append(I_lambda_ve_j)
 
                                 len_I_lambda_ve[v_j] = I_lambda_ve_j
-                
+
                 # sort nodes by I (if it exists), and append (m-1) longest to int_ij_EO
                 if I_e_lambda_ve_candidates:
                     indices, _ = zip(*sorted(enumerate(I_e_lambda_ve_candidates_I), key=itemgetter(1), reverse=True))
@@ -957,7 +957,7 @@ def EO_Compute_Length(G, C):
     # (skipped as this is guaranteed by the generator)
     G_new = copy.deepcopy(G)
     theta_i = G_new.keys()
-    
+
     for theta_ij in theta_i:
         # calculate the length
         C_i = C[theta_ij]
@@ -973,7 +973,7 @@ def EO_Compute_Length(G, C):
                 if C[idx] > max_c:
                     max_c = C[idx]
                     max_v = idx
-            
+
             lf_i = lf_i + max_c
             ve = max_v
             pre_ij = find_predecesor(G_new, ve)
@@ -989,14 +989,14 @@ def EO_Compute_Length(G, C):
                 if C[idx] > max_c:
                     max_c = C[idx]
                     max_v = idx
-            
+
             lb_i = lb_i + max_c
             ve = max_v
             suc_ij = find_successor(G_new, ve)
 
         # calculate l
         l_i = lf_i + lb_i - C_i
-        
+
         # assign to length
         l[theta_ij] = l_i
         lf[theta_ij] = lf_i
@@ -1021,13 +1021,14 @@ def EO_iter(G_dict, C_dict, providers, consumers, Prio):
 
     for iii in nodes:
         if Prio[iii] != -1:
-            raise Exception("Some prioirities are already assigned!")
+            pass
+            #raise Exception("Some prioirities are already assigned!")
     # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
     for theta_star_i in providers:
         for i in theta_star_i:
             Prio[i] = e
-    
+
     e = e - 1
 
     for i, theta_star_i in enumerate(providers):
@@ -1036,7 +1037,8 @@ def EO_iter(G_dict, C_dict, providers, consumers, Prio):
             # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
             for iii in theta_i:
                 if Prio[iii] != -1:
-                    raise Exception("Some prioirities are already assigned!")
+                    pass
+                    #raise Exception("Some prioirities are already assigned!")
             # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
 
             # --------------------------------------------------------------------------
@@ -1099,7 +1101,7 @@ def EO_iter(G_dict, C_dict, providers, consumers, Prio):
                 VN_array = V_array.copy()
                 for lamda_ve_i in lamda_ve:
                     VN_array.remove(lamda_ve_i)
-                
+
                 # find new providers and consumers
                 providers_new, consumers_new = find_providers_consumers(G_new, lamda_ve, VN_array)
                 EO_iter(G_new, C_dict, providers_new, consumers_new, Prio)
@@ -1111,7 +1113,7 @@ def EO_iter(G_dict, C_dict, providers, consumers, Prio):
                         pass
                         #raise Exception("Priority abnormal!")
                 # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<
-                
+
                 for vj in lamda_ve:
                     Prio[vj] = e; e = e - 1
 
@@ -1128,7 +1130,7 @@ def EO_iter(G_dict, C_dict, providers, consumers, Prio):
 def Eligiblity_Ordering_PA(G_dict, C_dict):
 
     Prio = {}
-    
+
     # --------------------------------------------------------------------------
     # I. load task parameters
     C_exp = []
@@ -1217,7 +1219,7 @@ def Eligiblity_Ordering_PA_legacy(G_dict, C_dict):
         # within each consumers, sort the order by the longest path that pass over theta_ij
         theta_i = consumers[iter_idx]
         l_i_arr = []
-        
+
         # build up a new (temporal) DAG with only the consumers
         G_new = copy.deepcopy(G_dict)
 
@@ -1230,7 +1232,7 @@ def Eligiblity_Ordering_PA_legacy(G_dict, C_dict):
                     if (j not in theta_i): # and (j not in theta_star_i):
                         value_new.remove(j)
                 G_new[key] = value_new
-        
+
         for theta_ij in theta_i:
             # 1. calculate the length
             C_i = C_dict[theta_ij]
@@ -1247,7 +1249,7 @@ def Eligiblity_Ordering_PA_legacy(G_dict, C_dict):
                     if C_dict[idx] > max_c:
                         max_c = C_dict[idx]
                         max_v = idx
-                
+
                 lf_i = lf_i + max_c
                 ve = max_v
                 pre_ij = find_predecesor(G_new, ve)
@@ -1264,7 +1266,7 @@ def Eligiblity_Ordering_PA_legacy(G_dict, C_dict):
                     if C_dict[idx] > max_c:
                         max_c = C_dict[idx]
                         max_v = idx
-                
+
                 lb_i = lb_i + max_c
                 ve = max_v
                 suc_ij = find_successor(G_new, ve)
@@ -1306,7 +1308,7 @@ def rta_multi_calc_R_diamond(Taskset, R_i, max_Rj, hp, R_KEY):
         R_diamond = R_diamond_new
         sum_R_hp = 0
         for j in hp:
-            sum_R_hp = sum_R_hp + math.ceil(R_diamond * 1.0 / Taskset[j]["T"]) * Taskset[j][R_KEY] 
+            sum_R_hp = sum_R_hp + math.ceil(R_diamond * 1.0 / Taskset[j]["T"]) * Taskset[j][R_KEY]
 
         R_diamond_new = R_i + max_Rj + sum_R_hp
 
@@ -1322,14 +1324,14 @@ def rta_schedulability_test(m, u):
     """ rta for multi-DAGs
     """
     global dag_base_folder
-    
+
     RND_sched_count = 0
     EO_sched_count = 0
     TPDS_sched_count = 0
 
     for taskset_idx in tqdm(range(TASKSET_TO_EVALUATE)): # taskset from 0 to 999
         #print("----------")
-        #print("Taskset:", taskset_idx) 
+        #print("Taskset:", taskset_idx)
         dag_base_folder = "data/data-multi-m6-u{:.1f}/{}/".format(u, taskset_idx)
         Taskset = load_taskset_metadata(dag_base_folder)
         #print(Taskset)
@@ -1363,13 +1365,13 @@ def rta_schedulability_test(m, u):
             max_Rj = 0
             if i < len(Taskset) - 1:
                 for j in range(i+1, len(Taskset)):
-                    if Taskset[j][R_key] > max_Rj: 
+                    if Taskset[j][R_key] > max_Rj:
                         max_Rj = Taskset[j][R_key]
 
             # calculate the response time
             max_Rj = 0
             R_diamond = rta_multi_calc_R_diamond(Taskset, R_i_EO, max_Rj, hp, R_key)
-            
+
             # even one deadline miss means unschedulable
             if (R_diamond > D_i):
                 schedualbe = False
@@ -1400,13 +1402,13 @@ def rta_schedulability_test(m, u):
             max_Rj = 0
             if i < len(Taskset) - 1:
                 for j in range(i+1, len(Taskset)):
-                    if Taskset[j][R_key] > max_Rj: 
+                    if Taskset[j][R_key] > max_Rj:
                         max_Rj = Taskset[j][R_key]
 
             # calculate the response time
             max_Rj = 0
             R_diamond = rta_multi_calc_R_diamond(Taskset, R_i_EO, max_Rj, hp, R_key)
-            
+
             # even one deadline miss means unschedulable
             if (R_diamond > D_i):
                 schedualbe = False
@@ -1437,13 +1439,13 @@ def rta_schedulability_test(m, u):
             max_Rj = 0
             if i < len(Taskset) - 1:
                 for j in range(i+1, len(Taskset)):
-                    if Taskset[j][R_key] > max_Rj: 
+                    if Taskset[j][R_key] > max_Rj:
                         max_Rj = Taskset[j][R_key]
 
             # calculate the response time
             max_Rj = 0
             R_diamond = rta_multi_calc_R_diamond(Taskset, R_i_EO, max_Rj, hp, R_key)
-            
+
             # even one deadline miss means unschedulable
             if (R_diamond > D_i):
                 schedualbe = False
@@ -1456,9 +1458,9 @@ def rta_schedulability_test(m, u):
             pass
             #print("Not schedulable!")
 
-    print("Utilization:", round(u/m, 2), 
-            "  Random:", round(RND_sched_count/TASKSET_TO_EVALUATE * 100, 1), 
-            "  EO:", round(EO_sched_count / TASKSET_TO_EVALUATE * 100, 1), 
+    print("Utilization:", round(u/m, 2),
+            "  Random:", round(RND_sched_count / TASKSET_TO_EVALUATE * 100, 1),
+            "  EO:", round(EO_sched_count / TASKSET_TO_EVALUATE * 100, 1),
             "  TPDS:", round(TPDS_sched_count / TASKSET_TO_EVALUATE * 100, 1))
 
 
@@ -1529,12 +1531,12 @@ def TPDS_max_l_max_lb(l, lb, A):
             # has draw case
             lb_max = -1
             lb_max_node = -1
-            
+
             for i in range(0, idx+1):
                 if LB_with_L_sorted[i] > lb_max:
                     lb_max = LB_with_L_sorted[i]
                     lb_max_node = l_index[indices[i]]
-            
+
             v = lb_max_node
 
     return v
@@ -1549,7 +1551,7 @@ def TPDS_Compute_Length(G, C):
     # (skipped as this is guaranteed by the generator)
     G_new = copy.deepcopy(G)
     theta_i = G_new.keys()
-    
+
 
     for theta_ij in theta_i:
         # calculate the length
@@ -1566,7 +1568,7 @@ def TPDS_Compute_Length(G, C):
                 if C[idx] > max_c:
                     max_c = C[idx]
                     max_v = idx
-            
+
             lf_i = lf_i + max_c
             ve = max_v
             pre_ij = find_predecesor(G_new, ve)
@@ -1582,14 +1584,14 @@ def TPDS_Compute_Length(G, C):
                 if C[idx] > max_c:
                     max_c = C[idx]
                     max_v = idx
-            
+
             lb_i = lb_i + max_c
             ve = max_v
             suc_ij = find_successor(G_new, ve)
 
         # calculate l
         l_i = lf_i + lb_i - C_i
-        
+
         # assign to length
         l[theta_ij] = l_i
         lf[theta_ij] = lf_i
@@ -1625,7 +1627,7 @@ def TPDS_Assign_Priority(G, C, l, lf, lb, Prio, p):
         remove_nodes_in_graph(G_copy, [v])
         if v in V:
             V.remove(v)
-        
+
         # iterates A
         while A:
             # find v in A with no predecesor and maximum l(v)
@@ -1641,7 +1643,7 @@ def TPDS_Assign_Priority(G, C, l, lf, lb, Prio, p):
                         for j in value:
                             if j not in ans_v:
                                 value.remove(j)
-                        
+
                         G_prime[key] = value
 
                 TPDS_Assign_Priority(G_prime, C, l, lf, lb, Prio, p)
@@ -1650,7 +1652,7 @@ def TPDS_Assign_Priority(G, C, l, lf, lb, Prio, p):
                 for vv in ans_v:
                     if vv in V:
                         V.remove(vv)
-            
+
             # removing v and its related edges
             remove_nodes_in_graph(G_copy, [v])
             if v in V:
@@ -1661,7 +1663,7 @@ def TPDS_Assign_Priority(G, C, l, lf, lb, Prio, p):
 
 
 def TPDS_Ordering_PA(G, C):
-    """ Ordering in: 
+    """ Ordering in:
     Qingqiang He, et. al, Intra-Task Priority Assignment in Real-Time Scheduling of DAG Tasks on Multi-cores, 2019
     """
     # 1. Procedure compute length
@@ -1676,7 +1678,7 @@ def TPDS_Ordering_PA(G, C):
 
 
 def TPDS_rta(task_idx, m):
-    """ Response time analysis in: 
+    """ Response time analysis in:
     Qingqiang He, et. al, Intra-Task Priority Assignment in Real-Time Scheduling of DAG Tasks on Multi-cores, 2019
     """
     # --------------------------------------------------------------------------
@@ -1705,7 +1707,7 @@ def TPDS_rta(task_idx, m):
             for ijij in ans_int:
                 if ijij in int_ij:
                     int_ij.remove(ijij)
-        
+
         # fonly the (m) longest lower priority interference node is kept
         int_ij_EO = []
         int_ij_EO_less_candidates = []
@@ -1736,9 +1738,9 @@ def TPDS_rta(task_idx, m):
                 for xxx in range(1, m):
                     if len(int_ij_EO_less_candidates) >= xxx:
                         int_ij_EO.append( int_ij_EO_less_candidates_sorted[xxx - 1] )
-                
+
                 int_ij = int_ij_EO.copy()
-        
+
         I_dict[theta_ij] = int_ij
         # >>> end of searching interference nodes
 
@@ -1755,7 +1757,7 @@ def TPDS_rta(task_idx, m):
 
         # calculate the finish time
         f_ij = C_dict[theta_ij] + f_ij_pre_max + interference
-        f_dict[theta_ij] = f_ij 
+        f_dict[theta_ij] = f_ij
 
     # --------------------------------------------------------------------------
     # IV. calculate reponse time
@@ -1792,7 +1794,7 @@ def experiment(exp=1):
     #         R0 = rta_np_classic(task_idx, m)
     #         R, alpha, beta = rta_alphabeta_new(task_idx, m, EOPA=False)
     #         print_debug("\r\n \r\n")
-    #         R_EO, alpha, beta = rta_alphabeta_new(task_idx, m, EOPA=True) 
+    #         R_EO, alpha, beta = rta_alphabeta_new(task_idx, m, EOPA=True)
 
     #         f.write("- - - - - - - - - - - - - - - - - - - - \r\n")
     #         f.write("Tau {}: \r\n".format(task_idx))
@@ -1837,7 +1839,7 @@ def experiment(exp=1):
                 #print("{}, {}, {}, {}, {}, {}".format(task_idx, R0, R_AB, R_AB_EO, R_AB_TPDS, R_TPDS))
 
                 results.append([task_idx, R0, R_AB, R_AB_EO, R_AB_TPDS, R_TPDS])
-            
+
             pickle.dump(results, open("results/m{}.p".format(m), "wb"))
     # exp 2 (scale p)
     elif exp == 2:
@@ -1857,7 +1859,7 @@ def experiment(exp=1):
                 #print("{}, {}, {}, {}, {}, {}".format(task_idx, R0, R_AB, R_AB_EO, R_AB_TPDS, R_TPDS))
 
                 results.append([task_idx, R0, R_AB, R_AB_EO, R_AB_TPDS, R_TPDS])
-            
+
             pickle.dump(results, open("results/m{}-p{}.p".format(m,p), "wb"))
     # exp 3 (Scale L)
     elif exp == 3:
@@ -1878,7 +1880,7 @@ def experiment(exp=1):
                 #print("{}, {}, {}, {}, {}, {}".format(task_idx, R0, R_AB, R_AB_EO, R_AB_TPDS, R_TPDS))
 
                 results.append([task_idx, R0, R_AB, R_AB_EO, R_AB_TPDS, R_TPDS])
-            
+
             pickle.dump(results, open("results/m{}-p{}-L{:.2f}.p".format(m,p,L), "wb"))
     elif exp == 4:
         # exp 4
@@ -1893,7 +1895,7 @@ def experiment(exp=1):
         # exp 5
         # run-time overhead
         res = []
-        
+
         for task_id in range(TASKSET_TO_EVALUATE):
             G_dict, C_dict, C_array, lamda, VN_array, L, W = load_task(task_id)
             Eligiblity_Ordering_PA(G_dict, C_dict)
@@ -1902,6 +1904,6 @@ def experiment(exp=1):
             # to avoid anomalies in the measurements
             if time_diff < 0.05:
                 res.append(time_diff)
-        
+
         print("Mean:", sum(res) / len(res))
         print("Min:", min(res))

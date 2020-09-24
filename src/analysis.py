@@ -824,7 +824,7 @@ def comparison_A_B_counting(A, B):
         
         if a > b:
             count_larger = count_larger + 1
-            diff_percentage = (b-a) * 1.0 / b * 100
+            diff_percentage = (a-b) * 1.0 / a * 100
             disadvantage_cases.append(diff_percentage)
     
     #print(count_less, count_equal, count_larger)
@@ -973,22 +973,22 @@ def generate_results():
     #---------------------------------------------------------------------------
     # RTSS'2020 experiments
     # Evaluation. A
-    print("Figure 2:")
+    print("Generating Figure 2 ...")
     boxplot_rta_grouped_scale_m()
     
     # Evaluation. B-1
-    print("Figure 3:")
+    print("Generating Figure 3 ...")
     boxplot_rta_grouped_scale_p()
     
     # Evaluation. B-2
-    print("Figure 4:")
+    print("Generating Figure 4 ...")
     boxplot_rta_grouped_scale_L()
 
     # Evaluation. C
-    print("Figure 5, Table I and Table II:")
+    print("Generating Figure 5, Table I and Table II ...")
     barchart_ordering_grouped()
     
     # Evaluation. D
-    print("Figure 6:")
+    print("Generating Figure 6 ...")
     multi_DAG_plot()
     #---------------------------------------------------------------------------
