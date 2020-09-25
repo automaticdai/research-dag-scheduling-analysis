@@ -1,4 +1,4 @@
-# DAG Scheduling Simulator (Multi-Core)
+# DAG Scheduling Simulator and Analysis (Multi-Core)
 
 [![made-with-python](https://img.shields.io/badge/Made%20with-Python-1f425f.svg)](https://www.python.org/)
 [![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://GitHub.com/Naereen/StrapDown.js/graphs/commit-activity)
@@ -11,14 +11,14 @@ Simulate DAG tasksets execution on multi-cores. This software package supports:
 - plug-in scheduling policies
 - plug-in response time analysis (RTA)
 - trace execution logs
-- use with the [!dag-gen-rnd](https://github.com/automaticdai/dag-gen-rnd) DAG task generator
+- use with the [dag-gen-rnd](https://github.com/automaticdai/dag-gen-rnd) DAG task generator
 - configurable scheduling and task parameters
 
 
 Supported scheduling algorithms:
 
 - Non-preemptive with random ordering
-- Non-preemptive with eligibility ordering (proposed)
+- Non-preemptive with node-level execution ordering (proposed)
 - Dynamic ordering (highest Ci first)
 - Static priority assignment proposed in Q. He, N. Guan, Z. Guo et al., “Intra-task priority assignment in real-time  scheduling  of  DAG  tasks  on  multi-cores,”IEEE  Transactions  on Parallel and Distributed Systems, vol. 30, no. 10, pp. 2283–2295, 2019.
 
@@ -38,13 +38,12 @@ Supported execution models:
 - Random-a,b: [a * WCET, b * WCET]
 
 
-For random, two algorithms can be chosen from:
+For random, two distribution functions can be chosen from:
 
-- Normal distributed
-- Uniformed distributed
+- Normal distribution
+- Uniform distribution
 
-(*) Note the normal distributed model is thresholded by 3 delta.
-
+(*) Note the normal distributed model is threshold by 3 delta.
 
 ## Instructions
 
@@ -65,11 +64,11 @@ The results will be in the `results` folder.
 ## Folder Organization
 
 - `src/`: contains all source code in .py.
-- `data/`: save all the input data (from a DAG generator).
+- `data/`: contains all the input data (from the DAG generator).
 - `results/`: save all the intermediate raw results.
 - `outputs/`: save all the produced diagrams.
 - `requirements.txt`: Python libraries that are required.
-- `README.md`: the repository readme document.
+- `README.md`: the repository readme document (this file).
 
 
 ## Known Issues
