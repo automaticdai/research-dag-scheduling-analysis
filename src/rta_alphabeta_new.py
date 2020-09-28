@@ -1889,6 +1889,9 @@ def experiment(exp=1):
     elif exp == 4:
         # exp 4
         # multi-DAG schedulability
+        dag_base_folder = "data/data-generic/"
+        L_ratio = -1
+        
         m = 6
         u_list = [0.2, 0.25, 0.3, 0.35, 0.4, 0.45, 0.5]
         u_list_new = [round(i * m, 2) for i in u_list]
