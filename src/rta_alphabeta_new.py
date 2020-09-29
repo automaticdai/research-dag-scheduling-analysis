@@ -1156,19 +1156,29 @@ def Eligiblity_Ordering_PA(G_dict, C_dict):
     # III. providers and consumers
     # iterative all critical nodes
     # after this, all provides and consumers will be collected
+
+    # >> for time measurement
+    global time_EO_CPC
+    begin_time = time.time()
+    # << for time measurement
+    
     providers, consumers = find_providers_consumers(G_dict, lamda, VN_array)
+
+    # >> for time measurement
+    time_EO_CPC = time.time() - begin_time
+    # << for time measurement
 
     # --------------------------------------------------------------------------
     # IV. Start iteration
     # >> for time measurement
-    global time_diff
+    global time_EO
     begin_time = time.time()
     # << for time measurement
 
     EO_iter(G_dict, C_dict, providers, consumers, Prio)
 
     # >> for time measurement
-    time_diff = time.time() - begin_time
+    time_EO = time.time() - begin_time
     # << for time measurement
 
     # >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -1768,7 +1778,8 @@ def TPDS_rta(task_idx, m):
 
 
 
-time_diff = 0
+time_EO = 0
+time_EO_CPC = 0
 
 ################################################################################
 ################################################################################
@@ -1901,16 +1912,34 @@ def experiment(exp=1):
     elif exp == 5:
         # exp 5
         # run-time overhead
-        res = []
+        res_EO = []
+        res_EO_CPC = []
+        res_TPDS = []
 
-        for task_id in range(TASKSET_TO_EVALUATE):
+        for task_id in range(TASKSET_TO_EVALUATE):   # TASKSET_TO_EVALUATE
             G_dict, C_dict, C_array, lamda, VN_array, L, W = load_task(task_id)
+
+            # time TPDS
+            begin_time = time.time()
+            TPDS_Ordering_PA(G_dict, C_dict)
+            time_TPDS = time.time() - begin_time
+            print(time_TPDS)
+            
+            # time EO
             Eligiblity_Ordering_PA(G_dict, C_dict)
-            print(time_diff)
+            print(time_EO_CPC)
+            print(time_EO)
+
+
+            print(" ")
 
             # to avoid anomalies in the measurements
-            if time_diff < 0.05:
-                res.append(time_diff)
-
-        print("Mean:", sum(res) / len(res))
-        print("Min:", min(res))
+            # if time_diff < 0.05:
+            res_TPDS.append(time_TPDS)
+            res_EO.append(time_EO)
+            res_EO_CPC.append(time_EO_CPC)
+            
+        print("TPDS_Mean:", round(sum(res_TPDS) / len(res_TPDS), 6))
+        print("EO Mean:", round(sum(res_EO) / len(res_EO), 6))
+        print("EO_CPC Mean:", round(sum(res_EO_CPC) / len(res_EO_CPC), 6))
+    
