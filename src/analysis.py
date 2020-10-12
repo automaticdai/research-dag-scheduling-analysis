@@ -439,7 +439,7 @@ def boxplot_rta_grouped_scale_m():
     # draw temporary red and blue lines and use them to create a legend
     plt.plot([], c='#e6550d', label='classic')
     plt.plot([], c='#2C7BB6', label='rta-cpf')
-    plt.plot([], c='#636363', label='he2019')
+    plt.plot([], c='#636363', label='He2019')
     plt.plot([], c='#fdae6b', label='rta-cpf-eo')
     plt.legend()
 
@@ -570,7 +570,7 @@ def boxplot_rta_grouped_scale_p():
     # draw temporary red and blue lines and use them to create a legend
     plt.plot([], c='#e6550d', label='classic')
     plt.plot([], c='#2C7BB6', label='rta-cpf')
-    plt.plot([], c='#636363', label='he2019')
+    plt.plot([], c='#636363', label='He2019')
     plt.plot([], c='#fdae6b', label='rta-cpf-eo')
     plt.legend()
 
@@ -653,7 +653,7 @@ def boxplot_rta_grouped_scale_mp():
     # draw temporary red and blue lines and use them to create a legend
     plt.plot([], c='#e6550d', label='classic')
     plt.plot([], c='#2C7BB6', label='rta-cpf')
-    plt.plot([], c='#636363', label='he2019')
+    plt.plot([], c='#636363', label='He2019')
     plt.plot([], c='#fdae6b', label='rta-cpf-eo')
     plt.legend()
 
@@ -744,7 +744,7 @@ def boxplot_rta_grouped_scale_L():
     # draw temporary red and blue lines and use them to create a legend
     plt.plot([], c='#e6550d', label='classic')
     plt.plot([], c='#2C7BB6', label='rta-cpf')
-    plt.plot([], c='#636363', label='he2019')
+    plt.plot([], c='#636363', label='He2019')
     plt.plot([], c='#fdae6b', label='rta-cpf-eo')
     plt.legend()
 
