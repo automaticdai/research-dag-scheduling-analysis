@@ -1,0 +1,281 @@
+graph [
+  directed 1
+  Index 547
+  U -1
+  T -1
+  W 10000
+  node [
+    id 0
+    label "1"
+    rank 0
+    c 1
+  ]
+  node [
+    id 1
+    label "2"
+    rank 1
+    c 323
+  ]
+  node [
+    id 2
+    label "3"
+    rank 1
+    c 304
+  ]
+  node [
+    id 3
+    label "4"
+    rank 2
+    c 175
+  ]
+  node [
+    id 4
+    label "5"
+    rank 2
+    c 1555
+  ]
+  node [
+    id 5
+    label "6"
+    rank 2
+    c 143
+  ]
+  node [
+    id 6
+    label "7"
+    rank 3
+    c 76
+  ]
+  node [
+    id 7
+    label "8"
+    rank 3
+    c 739
+  ]
+  node [
+    id 8
+    label "9"
+    rank 3
+    c 1339
+  ]
+  node [
+    id 9
+    label "10"
+    rank 3
+    c 395
+  ]
+  node [
+    id 10
+    label "11"
+    rank 4
+    c 197
+  ]
+  node [
+    id 11
+    label "12"
+    rank 4
+    c 900
+  ]
+  node [
+    id 12
+    label "13"
+    rank 5
+    c 1254
+  ]
+  node [
+    id 13
+    label "14"
+    rank 5
+    c 942
+  ]
+  node [
+    id 14
+    label "15"
+    rank 5
+    c 125
+  ]
+  node [
+    id 15
+    label "16"
+    rank 6
+    c 36
+  ]
+  node [
+    id 16
+    label "17"
+    rank 6
+    c 384
+  ]
+  node [
+    id 17
+    label "18"
+    rank 6
+    c 889
+  ]
+  node [
+    id 18
+    label "19"
+    rank 6
+    c 221
+  ]
+  node [
+    id 19
+    label "20"
+    c 1
+  ]
+  edge [
+    source 0
+    target 2
+    label "1"
+  ]
+  edge [
+    source 0
+    target 1
+    label "1"
+  ]
+  edge [
+    source 0
+    target 7
+    label "1"
+  ]
+  edge [
+    source 0
+    target 17
+    label "1"
+  ]
+  edge [
+    source 1
+    target 3
+    label "323"
+  ]
+  edge [
+    source 1
+    target 5
+    label "323"
+  ]
+  edge [
+    source 2
+    target 3
+    label "304"
+  ]
+  edge [
+    source 2
+    target 4
+    label "304"
+  ]
+  edge [
+    source 3
+    target 8
+    label "175"
+  ]
+  edge [
+    source 4
+    target 6
+    label "1555"
+  ]
+  edge [
+    source 4
+    target 9
+    label "1555"
+  ]
+  edge [
+    source 5
+    target 6
+    label "143"
+  ]
+  edge [
+    source 5
+    target 9
+    label "143"
+  ]
+  edge [
+    source 6
+    target 19
+    label "76"
+  ]
+  edge [
+    source 7
+    target 19
+    label "739"
+  ]
+  edge [
+    source 8
+    target 19
+    label "1339"
+  ]
+  edge [
+    source 9
+    target 10
+    label "395"
+  ]
+  edge [
+    source 9
+    target 11
+    label "395"
+  ]
+  edge [
+    source 10
+    target 12
+    label "197"
+  ]
+  edge [
+    source 10
+    target 13
+    label "197"
+  ]
+  edge [
+    source 10
+    target 14
+    label "197"
+  ]
+  edge [
+    source 11
+    target 19
+    label "900"
+  ]
+  edge [
+    source 12
+    target 15
+    label "1254"
+  ]
+  edge [
+    source 12
+    target 18
+    label "1254"
+  ]
+  edge [
+    source 13
+    target 15
+    label "942"
+  ]
+  edge [
+    source 14
+    target 16
+    label "125"
+  ]
+  edge [
+    source 14
+    target 18
+    label "125"
+  ]
+  edge [
+    source 15
+    target 19
+    label "36"
+  ]
+  edge [
+    source 16
+    target 19
+    label "384"
+  ]
+  edge [
+    source 17
+    target 19
+    label "889"
+  ]
+  edge [
+    source 18
+    target 19
+    label "221"
+  ]
+]
