@@ -1,4 +1,4 @@
-# DAG Scheduling Simulator and Analysis (Multi-Core)
+# DAG Scheduling and Analysis on Multiprocessor Systems
 
 [![made-with-python](https://img.shields.io/badge/Made%20with-Python-1f425f.svg)](https://www.python.org/)
 [![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://GitHub.com/Naereen/StrapDown.js/graphs/commit-activity)
@@ -82,6 +82,18 @@ Please cite the following paper if you use this code in your work:
 
 Shuai Zhao, Xiaotian Dai, Iain Bate, Alan Burns and Wanli Chang. *DAG Scheduling and Analysis on Multiprocessor Systems: Exploitation of Parallelism and Dependency*. The IEEE Real-Time Systems Symposium. 2020.
 
+
+BibTex entry:
+
+```text
+@inproceedings{zhao2020dag,
+  title={DAG Scheduling and Analysis on Multiprocessor Systems: Exploitation of Parallelism and Dependency},
+  author={Zhao, Shuai and Dai, Xiaotian and Bate, Iain and Burns, Alan and Chang, Wanli},
+  booktitle={IEEE Real-Time Systems Symposium},
+  year={2020},
+  organization={IEEE}
+}
+```
 
 ## License
 
