@@ -27,7 +27,7 @@ Support response time analysis (RTA):
 
 - Classical 1/m bound
 - The proposed (alpha, beta) analysis
-- The proposed (alpha, beta) analysis with eligibility ordering
+- The proposed (alpha, beta) analysis with eligibility ordering (EO)
 
 
 Supported execution models:
@@ -61,10 +61,17 @@ and finally:
 
 The results will be in the `results` folder.
 
+**To reproduce the results in RTSS 2020** (notice there is a known issue; see below):
+
+`> python3 src/rtss_ae.py`
+
 ## Folder Organization
 
-- `src/`: contains all source code in .py.
 - `data/`: contains all the input data (from the DAG generator).
+- `src/`: contains all source code in .py.
+  - `main.py`: the main file of the DAG simulator
+  - `rta_alphabeta_new.py`: the proposed priority ordering and (alpha, beta) response time analysis
+  - 
 - `results/`: save all the intermediate raw results.
 - `outputs/`: save all the produced diagrams.
 - `requirements.txt`: Python libraries that are required.
@@ -73,7 +80,7 @@ The results will be in the `results` folder.
 
 ## Known Issues
 
-No known issues up-to-date.
+- (2021/04/27) As reported by the first author (Qingqiang He) of TPDS'2019. There is a bug on the recursion of  DAGs which causes the algorithm sometimes find sub-optimal longest paths. This bug should not affect major conclusions of the paper as both ours and He'2019 rely on this same buggy function routine. We have solved this issue in the latest release. However, if you are looking to reproduce the exactly results as in RTSS'2020, please checkout the version tagged with `rtss2020-ae` by using `git checkout rtss2020-ae`
 
 
 ## Citation

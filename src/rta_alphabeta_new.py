@@ -963,36 +963,16 @@ def EO_Compute_Length(G, C):
         C_i = C[theta_ij]
 
         # forward searching in G_new
-        lf_i = C_i
-
-        pre_ij = find_predecesor(G_new, theta_ij)
-        while pre_ij:
-            max_c = 0
-            max_v = -1
-            for idx in pre_ij:
-                if C[idx] > max_c:
-                    max_c = C[idx]
-                    max_v = idx
-
-            lf_i = lf_i + max_c
-            ve = max_v
-            pre_ij = find_predecesor(G_new, ve)
+        c_array = []
+        for key in sorted(C):
+            c_array.append(C[key])
+        lf_i, _ = find_longest_path_dfs(G_new, min(theta_i), theta_ij, c_array)
 
         # backward searching in G_new
-        lb_i = C_i
-
-        suc_ij = find_successor(G_new, theta_ij)
-        while suc_ij:
-            max_c = 0
-            max_v = -1
-            for idx in suc_ij:
-                if C[idx] > max_c:
-                    max_c = C[idx]
-                    max_v = idx
-
-            lb_i = lb_i + max_c
-            ve = max_v
-            suc_ij = find_successor(G_new, ve)
+        c_array = []
+        for key in sorted(C):
+            c_array.append(C[key])
+        lb_i, _ = find_longest_path_dfs(G_new, theta_ij, max(theta_i), c_array)
 
         # calculate l
         l_i = lf_i + lb_i - C_i
@@ -1563,42 +1543,21 @@ def TPDS_Compute_Length(G, C):
     G_new = copy.deepcopy(G)
     theta_i = G_new.keys()
 
-
     for theta_ij in theta_i:
         # calculate the length
         C_i = C[theta_ij]
 
         # forward searching in G_new
-        lf_i = C_i
-
-        pre_ij = find_predecesor(G_new, theta_ij)
-        while pre_ij:
-            max_c = 0
-            max_v = -1
-            for idx in pre_ij:
-                if C[idx] > max_c:
-                    max_c = C[idx]
-                    max_v = idx
-
-            lf_i = lf_i + max_c
-            ve = max_v
-            pre_ij = find_predecesor(G_new, ve)
+        c_array = []
+        for key in sorted(C):
+            c_array.append(C[key])
+        lf_i, _ = find_longest_path_dfs(G_new, min(theta_i), theta_ij, c_array)
 
         # backward searching in G_new
-        lb_i = C_i
-
-        suc_ij = find_successor(G_new, theta_ij)
-        while suc_ij:
-            max_c = 0
-            max_v = -1
-            for idx in suc_ij:
-                if C[idx] > max_c:
-                    max_c = C[idx]
-                    max_v = idx
-
-            lb_i = lb_i + max_c
-            ve = max_v
-            suc_ij = find_successor(G_new, ve)
+        c_array = []
+        for key in sorted(C):
+            c_array.append(C[key])
+        lb_i, _ = find_longest_path_dfs(G_new, theta_ij, max(theta_i), c_array)
 
         # calculate l
         l_i = lf_i + lb_i - C_i
@@ -1943,3 +1902,10 @@ def experiment(exp=1):
         print("EO Mean:", round(sum(res_EO) / len(res_EO), 6))
         print("EO_CPC Mean:", round(sum(res_EO_CPC) / len(res_EO_CPC), 6))
     
+
+# test code:
+if __name__ == "__main__":
+    G = {1: [2, 3, 4, 7], 2:[6], 3:[5], 4:[5], 7:[8], 6:[8], 5: [8], 8:[]}
+    C = {1: 0, 2: 79, 3: 74, 4: 73, 5: 76, 6: 71, 7: 99, 8: 0}
+    l, lf, lb = TPDS_Compute_Length(G, C)
+    print(l)

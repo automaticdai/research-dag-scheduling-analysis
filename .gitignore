@@ -2,6 +2,7 @@
 results/
 outputs/
 .vscode/
+*.idea/
 *.log
 *.p
 *.pdf
