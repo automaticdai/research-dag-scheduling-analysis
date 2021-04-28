@@ -80,7 +80,7 @@ The results will be in the `results` folder.
 
 ## Known Issues
 
-- (2021/04/27) As reported by the first author (Qingqiang He) of TPDS'2019. There is a bug on the recursion of  DAGs which causes the algorithm sometimes find sub-optimal longest paths. This bug should not affect major conclusions of the paper as both ours and He'2019 rely on this same buggy function routine. We have solved this issue in the latest release. However, if you are looking to reproduce the exactly results as in RTSS'2020, please checkout the version tagged with `rtss2020-ae` by using `$ git checkout rtss2020-ae`.
+- (2021/04/27) As reported by the first author (Qingqiang He) of "Intra-task priority assignment in real-time scheduling of DAG tasks on multi-cores", TPDS 2019. There is a bug on the recursion of  DAGs which causes the algorithm sometimes find sub-optimal longest paths. This bug should not affect major conclusions of the paper as both ours and He'2019 rely on this same buggy function routine. We have solved this issue in the latest release. However, if you are looking to reproduce the exactly results as in RTSS'2020, please checkout the version tagged with `rtss2020-ae` by using `$ git checkout rtss2020-ae`.
 
 
 ## Citation
