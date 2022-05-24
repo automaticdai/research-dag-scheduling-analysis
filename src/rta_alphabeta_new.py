@@ -956,6 +956,38 @@ def EO_Compute_Length(G, C):
     # topological ordering
     # (skipped as this is guaranteed by the generator)
     G_new = copy.deepcopy(G)
+
+    # [debug]
+    #print(G_new)
+
+    source_node_id = 1
+    sink_node_id = 99
+    G_new[source_node_id] = []
+    G_new[sink_node_id] = []
+    C[source_node_id] = 1
+    C[sink_node_id] = 1
+
+    #print(C)
+
+    # find node who has no parents
+    child_nodes = []
+    for key, value in copy.deepcopy(G_new).items():
+        for i_value in value:
+            child_nodes.append(i_value)
+
+    for key, value in copy.deepcopy(G_new).items():
+        if key not in child_nodes:
+            if key is not source_node_id and key is not sink_node_id:
+                G_new[source_node_id].append(key)
+
+    # find nodes who has no child
+    for key, value in G_new.items():
+        if not value:
+            if key is not sink_node_id:
+                G_new[key].append(sink_node_id)
+    #print(G_new)
+    # [debug]
+
     theta_i = G_new.keys()
 
     for theta_ij in theta_i:
@@ -963,15 +995,21 @@ def EO_Compute_Length(G, C):
         C_i = C[theta_ij]
 
         # forward searching in G_new
-        c_array = []
+        # [debug]
+        c_array = [0] * sink_node_id
         for key in sorted(C):
-            c_array.append(C[key])
+            c_array[key-1] = C[key]
+        #print(c_array)
+
         lf_i, _ = find_longest_path_dfs(G_new, min(theta_i), theta_ij, c_array)
 
         # backward searching in G_new
-        c_array = []
+        # [debug]
+        c_array = [0] * sink_node_id
         for key in sorted(C):
-            c_array.append(C[key])
+            c_array[key-1] = C[key]
+        #print(c_array)
+
         lb_i, _ = find_longest_path_dfs(G_new, theta_ij, max(theta_i), c_array)
 
         # calculate l
@@ -983,6 +1021,42 @@ def EO_Compute_Length(G, C):
         lb[theta_ij] = lb_i
 
     return l, lf, lb
+
+# def EO_Compute_Length(G, C):
+#     lf = {}
+#     lb = {}
+#     l = {}
+
+#     # topological ordering
+#     # (skipped as this is guaranteed by the generator)
+#     G_new = copy.deepcopy(G)
+#     theta_i = G_new.keys()
+
+#     for theta_ij in theta_i:
+#         # calculate the length
+#         C_i = C[theta_ij]
+
+#         # forward searching in G_new
+#         c_array = []
+#         for key in sorted(C):
+#             c_array.append(C[key])
+#         lf_i, _ = find_longest_path_dfs(G_new, min(theta_i), theta_ij, c_array)
+
+#         # backward searching in G_new
+#         c_array = []
+#         for key in sorted(C):
+#             c_array.append(C[key])
+#         lb_i, _ = find_longest_path_dfs(G_new, theta_ij, max(theta_i), c_array)
+
+#         # calculate l
+#         l_i = lf_i + lb_i - C_i
+
+#         # assign to length
+#         l[theta_ij] = l_i
+#         lf[theta_ij] = lf_i
+#         lb[theta_ij] = lb_i
+
+#     return l, lf, lb
 
 
 e = A_VERY_LARGE_NUMBER # this has to be global, or be passed by reference
